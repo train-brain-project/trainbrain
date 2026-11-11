@@ -75,11 +75,6 @@
         "example": "const arr = [\"a\", \"b\", \"c\"];\nfor (let i = 0; i < arr.length; i++) {\n  console.log(i, arr[i]);\n}"
       },
       {
-        "question": "Что делает метод forEach?",
-        "answer": "Метод (функция, которая «живёт» у массива) вызывает вашу функцию для каждого элемента. Результата он не возвращает, и выйти из него через break нельзя.",
-        "example": "[\"a\", \"b\"].forEach((item, index) => {\n  console.log(index, item);\n});"
-      },
-      {
         "question": "Что такое вложенный цикл?",
         "answer": "Цикл внутри другого цикла. Внутренний проходит полностью на каждую итерацию внешнего. Если внешний 3 раза, а внутренний 4, тело выполнится 12 раз.",
         "example": "for (let row = 1; row <= 3; row++) {\n  for (let col = 1; col <= 4; col++) {\n    console.log(row, col);\n  }\n}"
