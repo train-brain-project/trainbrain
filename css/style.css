@@ -1,3 +1,20 @@
+/* Цвета в одном месте: поменяешь здесь, поменяется везде */
+:root {
+  --bg: #22272e;            /* фон страницы */
+  --surface: #2d333b;       /* фон строк и карточек */
+  --surface-press: #373e47; /* строка в момент нажатия */
+  --text: #c9d1d9;          /* основной текст */
+  --muted: #9aa4af;         /* приглушённый текст */
+  --accent: #539bf5;        /* акцент (синий) */
+  --border: #444c56;        /* границы */
+  --button-bg: #539bf5;     /* фон кнопки */
+  --button-bg-press: #6cb0ff; /* кнопка при нажатии */
+  --button-text: #1c2128;   /* текст на кнопке */
+  --error: #f47067;         /* подсказка об ошибке */
+  --field-bg: #1c2128;      /* фон поля ввода */
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
 /* Общие настройки: крупный шрифт для телефона */
 * {
   box-sizing: border-box;
@@ -8,8 +25,10 @@ body {
   font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 20px;
   line-height: 1.4;
-  color: #222;
-  background: #f5f5f7;
+  color: var(--text);
+  background-color: var(--bg);
+  /* Очень тусклый «кодовый» узор, почти не виден */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%23adbac7' fill-opacity='0.05' font-family='monospace' font-size='20'%3E%3Ctext x='14' y='40'%3E%7B %7D%3C/text%3E%3Ctext x='96' y='96'%3E%26lt;/%26gt;%3C/text%3E%3Ctext x='30' y='140'%3E;%3C/text%3E%3C/g%3E%3C/svg%3E");
   /* Отступы под вырез и нижнюю полосу iPhone */
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
            env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -22,11 +41,14 @@ body {
 }
 
 h1 {
+  font-family: var(--mono);
+  color: var(--accent);
   font-size: 36px;
   text-align: center;
 }
 
 h2 {
+  font-family: var(--mono);
   font-size: 26px;
   margin: 8px 0 12px;
 }
@@ -45,15 +67,17 @@ h2 {
   padding: 10px 16px;
   text-align: left;
   font: inherit;
-  color: #222;
-  background: #fff;
-  border: 1px solid #ddd;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 .deck-row:active {
-  background: #e8eefc;
+  background: var(--surface-press);
+  transform: scale(0.98);
 }
 
 .deck-name {
@@ -66,12 +90,12 @@ h2 {
 .deck-count {
   display: block;
   font-size: 14px;
-  color: #666;
+  color: var(--muted);
 }
 
 .empty-text {
   text-align: center;
-  color: #666;
+  color: var(--muted);
   margin: 24px 0;
 }
 
@@ -83,21 +107,22 @@ h2 {
   min-height: 24px;
   margin: 8px 0;
   font-size: 16px;
-  color: #c0392b;
+  color: var(--error);
 }
 
 .new-deck-form .big-button {
   margin-bottom: 10px;
 }
 
-/* Кнопка «Отмена»: спокойный цвет */
+/* Кнопка «Отмена»: спокойный цвет, только рамка */
 .big-button.secondary {
-  color: #2f6fed;
-  background: #e3eafc;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
 }
 
 .big-button.secondary:active {
-  background: #cdd9f7;
+  background: var(--surface-press);
 }
 
 #deck-list + .empty-text + .big-button {
@@ -111,19 +136,21 @@ h2 {
   min-height: 56px;
   font-size: 22px;
   font-weight: bold;
-  color: #fff;
-  background: #2f6fed;
+  color: var(--button-text);
+  background: var(--button-bg);
   border: none;
   border-radius: 14px;
   cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
 }
 
 /* Вид кнопки в момент нажатия */
 .big-button:active {
-  background: #1f55c0;
+  background: var(--button-bg-press);
+  transform: scale(0.98);
 }
 
-/* Поля ввода (на будущее): шрифт не меньше 16px,
+/* Поля ввода: шрифт не меньше 16px,
    иначе iPhone сам приближает страницу при вводе */
 input,
 textarea,
@@ -132,4 +159,46 @@ select {
   width: 100%;
   min-height: 48px;
   padding: 10px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+/* Заметная рамка, когда поле выбрано */
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--accent);
+  border-color: var(--accent);
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+/* Мягкое появление списка и формы (до 0.2 секунды) */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+#deck-list,
+.new-deck-form {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Если в телефоне включено «уменьшить движение» — всё без анимаций */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .deck-row:active,
+  .big-button:active {
+    transform: none;
+  }
 }
