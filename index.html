@@ -35,8 +35,11 @@
       <button id="card-done-btn" class="big-button secondary" type="button">Готово</button>
     </div>
 
-    <button id="export-deck-btn" class="big-button secondary" type="button">Экспорт колоды</button>
-    <p id="export-deck-hint" class="form-hint" role="status"></p>
+    <section class="file-actions">
+      <h3 class="file-title">Файлы</h3>
+      <button id="export-deck-btn" class="big-button file-btn" type="button">Экспорт колоды</button>
+      <p id="export-deck-hint" class="form-hint" role="status"></p>
+    </section>
   </main>
 
   <main id="decks-screen" class="app screen">
@@ -56,8 +59,15 @@
       <button id="cancel-btn" class="big-button secondary" type="button">Отмена</button>
     </div>
 
-    <button id="export-all-btn" class="big-button secondary" type="button">Экспорт всех колод</button>
-    <p id="export-all-hint" class="form-hint" role="status"></p>
+    <section class="file-actions">
+      <h3 class="file-title">Файлы</h3>
+      <button id="import-btn" class="big-button file-btn" type="button">Импорт из файла</button>
+      <input id="import-file" type="file" accept=".json,application/json,text/plain" hidden>
+      <p id="import-hint" class="form-hint" role="status"></p>
+
+      <button id="export-all-btn" class="big-button file-btn" type="button">Экспорт всех колод</button>
+      <p id="export-all-hint" class="form-hint" role="status"></p>
+    </section>
 
     <p id="app-version" class="app-version"></p>
   </main>

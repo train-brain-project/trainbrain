@@ -193,6 +193,12 @@ h2 {
   margin-top: 16px;
 }
 
+/* Кнопки «Новая колода» и «Новая карточка»: отступ снизу, чтобы не слипались */
+#new-deck-btn,
+#new-card-btn {
+  margin-bottom: 8px;
+}
+
 /* Крупная кнопка на всю ширину (без hover-эффектов) */
 .big-button {
   display: block;
@@ -334,6 +340,34 @@ input::placeholder {
 
 .card-editing .big-button {
   margin-bottom: 10px;
+}
+
+/* Блок «Файлы» (импорт и экспорт): отдельно от остальных кнопок, цвет янтаря */
+.file-actions {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.file-title {
+  margin: 0 0 12px;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: normal;
+  color: var(--muted);
+}
+
+.big-button.file-btn {
+  color: #1c1a14;
+  background: #f0a83a;
+}
+
+.big-button.file-btn:active {
+  background: #ffbf5e;
+}
+
+.file-actions .form-hint {
+  margin-bottom: 14px;
 }
 
 #new-card-form textarea {

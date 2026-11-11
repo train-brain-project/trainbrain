@@ -514,6 +514,63 @@ exportAllBtn.addEventListener('click', function () {
   exportFile(obj, 'trainbrain-backup.json', exportAllHint);
 });
 
+// ---------- Импорт ----------
+var importBtn = document.getElementById('import-btn');
+var importFile = document.getElementById('import-file');
+var importHint = document.getElementById('import-hint');
+
+function showImportHint(text, ok) {
+  importHint.textContent = text;
+  importHint.classList.toggle('ok', !!ok);
+}
+
+// Собираем понятный итог импорта
+function importSummary(r) {
+  var parts = [];
+  if (r.added > 0) {
+    parts.push('добавлено колод: ' + r.added);
+  }
+  if (r.renamed > 0) {
+    parts.push('из них с новым именем: ' + r.renamed);
+  }
+  if (r.skipped > 0) {
+    parts.push('пропущено (такие уже есть): ' + r.skipped);
+  }
+  if (r.badCards > 0) {
+    parts.push('неподходящих карточек пропущено: ' + r.badCards);
+  }
+  var text = parts.join(', ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+importBtn.addEventListener('click', function () {
+  showImportHint('', false);
+  importFile.click();
+});
+
+importFile.addEventListener('change', function () {
+  var file = importFile.files && importFile.files[0];
+  if (!file) {
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function () {
+    var result = importFromText(String(reader.result));
+    if (result.ok) {
+      renderDecks();
+      showImportHint(importSummary(result) || 'Ничего не добавлено', result.added > 0);
+    } else {
+      showImportHint(result.error, false);
+    }
+    importFile.value = ''; // чтобы тот же файл можно было выбрать снова
+  };
+  reader.onerror = function () {
+    showImportHint('Не удалось открыть файл', false);
+    importFile.value = '';
+  };
+  reader.readAsText(file);
+});
+
 // При запуске всегда показываем список колод
 renderDecks();
 

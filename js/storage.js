@@ -253,9 +253,135 @@ function buildAllExport() {
   };
 }
 
+// ---------- Импорт ----------
+
+// Превращаем карточку из файла в нормальную. Плохая карточка даёт null.
+function cleanImportedCard(raw) {
+  if (!raw || typeof raw !== 'object' || typeof raw.question !== 'string' ||
+      typeof raw.answer !== 'string') {
+    return null;
+  }
+  var q = raw.question.trim();
+  var a = raw.answer.trim();
+  if (!q || !a) {
+    return null;
+  }
+  var score = Math.round(Number(raw.score));
+  if (!(score >= 0)) {
+    score = 0;
+  }
+  if (score > 4) {
+    score = 4;
+  }
+  function stamp(value, fallback) {
+    return typeof value === 'number' && isFinite(value) ? value : fallback;
+  }
+  var now = Date.now();
+  return {
+    id: createId(),
+    question: q,
+    answer: a,
+    score: score,
+    lastSeenAt: stamp(raw.lastSeenAt, null),
+    createdAt: stamp(raw.createdAt, now),
+    updatedAt: stamp(raw.updatedAt, now),
+    eli5: raw.eli5 === undefined ? null : raw.eli5,
+    example: raw.example === undefined ? null : raw.example,
+    puzzle: raw.puzzle === undefined ? null : raw.puzzle
+  };
+}
+
+// Подпись набора карточек (для сравнения колод): вопросы и ответы, порядок не важен
+function cardsSignature(cards) {
+  return (Array.isArray(cards) ? cards : []).map(function (c) {
+    return JSON.stringify([String(c.question).trim(), String(c.answer).trim()]);
+  }).sort().join('\n');
+}
+
+// Первое свободное имя: «Имя (2)», «Имя (3)»...
+function freeDeckName(base, existingNames) {
+  var n = 2;
+  while (existingNames.indexOf(base + ' (' + n + ')') !== -1) {
+    n++;
+  }
+  return base + ' (' + n + ')';
+}
+
+// Загружаем данные из текста файла. Всё или ничего: при ошибке ничего не меняется.
+// Возвращает { ok: true, added, skipped, renamed, badCards } или { ok: false, error }.
+function importFromText(text) {
+  var parsed;
+  if (typeof text !== 'string' || text.length > 20 * 1024 * 1024) {
+    return { ok: false, error: 'Файл слишком большой или пустой' };
+  }
+  try {
+    parsed = JSON.parse(text.replace(/^﻿/, ''));
+  } catch (e) {
+    return { ok: false, error: 'Это не файл колоды: не получилось прочитать' };
+  }
+  var incoming = null;
+  if (parsed && parsed.format === 'flashcards-deck' && parsed.deck) {
+    incoming = [parsed.deck];
+  } else if (parsed && parsed.format === 'flashcards-backup' && Array.isArray(parsed.decks)) {
+    incoming = parsed.decks;
+  }
+  if (!incoming) {
+    return { ok: false, error: 'Это не файл TrainBrain' };
+  }
+  if (typeof parsed.schemaVersion === 'number' && parsed.schemaVersion > 1) {
+    return { ok: false, error: 'Файл сделан более новой версией приложения. Обновите приложение.' };
+  }
+
+  var data = loadData();
+  var names = data.decks.map(function (d) { return d.name; });
+  var result = { ok: true, added: 0, skipped: 0, renamed: 0, badCards: 0 };
+
+  incoming.forEach(function (rawDeck) {
+    var name = rawDeck && typeof rawDeck.name === 'string' ? rawDeck.name.trim().slice(0, 60) : '';
+    if (!name || !Array.isArray(rawDeck.cards)) {
+      result.skipped++;
+      return;
+    }
+    var cards = [];
+    rawDeck.cards.forEach(function (raw) {
+      var card = cleanImportedCard(raw);
+      if (card) {
+        cards.push(card);
+      } else {
+        result.badCards++;
+      }
+    });
+
+    // Такая же колода уже есть (то же имя или «Имя (2)» и те же карточки): пропускаем
+    var signature = cardsSignature(cards);
+    var duplicate = data.decks.some(function (d) {
+      var base = d.name.replace(/ \(\d+\)$/, '');
+      return (d.name === name || base === name) && cardsSignature(d.cards) === signature;
+    });
+    if (duplicate) {
+      result.skipped++;
+      return;
+    }
+
+    if (names.indexOf(name) !== -1) {
+      name = freeDeckName(name, names);
+      result.renamed++;
+    }
+    names.push(name);
+    data.decks.push({ id: createId(), name: name, createdAt: Date.now(), cards: cards });
+    result.added++;
+  });
+
+  if (result.added > 0 && !saveData(data)) {
+    return { ok: false, error: 'Не удалось сохранить: на телефоне не хватает места' };
+  }
+  return result;
+}
+
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    importFromText: importFromText,
     buildDeckExport: buildDeckExport,
     buildAllExport: buildAllExport,
     updateCard: updateCard,
