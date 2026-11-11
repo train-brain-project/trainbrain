@@ -8,6 +8,31 @@ var formHint = document.getElementById('form-hint');
 var createBtn = document.getElementById('create-btn');
 var cancelBtn = document.getElementById('cancel-btn');
 
+// Процент выученных карточек колоды (0..100). Невыученные в прогресс не входят.
+function learnedPercent(cards) {
+  var list = Array.isArray(cards) ? cards : [];
+  return list.length === 0 ? 0 : Math.round(countLearned(list) / list.length * 100);
+}
+
+// Полоска прогресса для строки колоды в списке
+function buildDeckProgress(cards) {
+  var percent = learnedPercent(cards);
+  var wrap = document.createElement('span');
+  wrap.className = 'deck-progress';
+  var bar = document.createElement('span');
+  bar.className = 'progress-bar';
+  var fill = document.createElement('span');
+  fill.className = 'progress-fill deck-fill';
+  fill.style.width = percent + '%';
+  bar.appendChild(fill);
+  var label = document.createElement('span');
+  label.className = 'deck-percent';
+  label.textContent = percent + '%';
+  wrap.appendChild(bar);
+  wrap.appendChild(label);
+  return wrap;
+}
+
 // «Карточек: 20», а если что-то уже выучено, то «Карточек: 20 · выучено 5»
 function cardCountText(cards) {
   var list = Array.isArray(cards) ? cards : [];
@@ -142,6 +167,7 @@ function renderDecks() {
 
     row.appendChild(name);
     row.appendChild(count);
+    row.appendChild(buildDeckProgress(deck.cards));
     // Нажатие на строку колоды открывает экран колоды
     row.addEventListener('click', function () {
       openDeckScreen(deck.id);
@@ -224,6 +250,8 @@ var cardList = document.getElementById('card-list');
 var cardsEmpty = document.getElementById('cards-empty');
 var newCardBtn = document.getElementById('new-card-btn');
 var newCardForm = document.getElementById('new-card-form');
+var deckProgressFill = document.getElementById('deck-progress-fill');
+var deckProgressPct = document.getElementById('deck-progress-pct');
 var rulesBox = document.getElementById('rules');
 var rulesIntro = document.getElementById('rules-intro');
 var cardEditorSlot = document.getElementById('card-editor-slot');
@@ -571,6 +599,9 @@ function renderDeckScreen(newCardId) {
   var cards = Array.isArray(deck.cards) ? deck.cards : [];
   deckTitle.textContent = deck.name;
   deckCardCount.textContent = cardCountText(cards);
+  var deckPercent = learnedPercent(cards);
+  deckProgressFill.style.width = deckPercent + '%';
+  deckProgressPct.textContent = deckPercent + '%';
   cardList.textContent = '';
   if (editingCardId !== null && !cards.some(function (c) { return c.id === editingCardId; })) {
     editingCardId = null;
@@ -691,6 +722,7 @@ function openDeckScreen(deckId) {
     return;
   }
   openDeckId = deckId;
+  pushScreen();
   exportDeckHint.textContent = '';
   resetHint.textContent = '';
   resetConfirm.hidden = true;
@@ -705,7 +737,7 @@ function openDeckScreen(deckId) {
   window.scrollTo(0, 0);
 }
 
-backBtn.addEventListener('click', showDecksScreen);
+backBtn.addEventListener('click', function () { navigateBack(); });
 newCardBtn.addEventListener('click', openCardForm);
 cardAddBtn.addEventListener('click', submitCard);
 cardDoneBtn.addEventListener('click', closeCardForm);
@@ -962,6 +994,9 @@ function startStudy(onlyIds) {
   if (!deck || !Array.isArray(deck.cards) || deck.cards.length === 0) {
     return;
   }
+  if (studyScreen.hidden) {
+    pushScreen(); // «заново» и «повторить ошибки» остаются на том же экране
+  }
   studyKnown = 0;
   studyUnknown = 0;
   studyLastId = null;
@@ -1049,9 +1084,9 @@ studyAgainBtn.addEventListener('click', function () {
 studyRetryBtn.addEventListener('click', function () {
   startStudy(studyMissed.slice()); // копию: startStudy очищает список ошибок
 });
-studyDoneBtn.addEventListener('click', stopStudy);
+studyDoneBtn.addEventListener('click', function () { navigateBack(); });
 studyBtn.addEventListener('click', function () { startStudy(); });
-studyExitBtn.addEventListener('click', stopStudy);
+studyExitBtn.addEventListener('click', function () { navigateBack(); });
 
 // ---------- Сброс прогресса колоды ----------
 var resetBtn = document.getElementById('reset-btn');
@@ -1331,19 +1366,158 @@ function renderStats() {
   setText('stats-total', 'Всего ответов: ' + summary.totalAnswers);
 }
 
+function closeStatsScreen() {
+  statsScreen.hidden = true;
+  decksScreen.hidden = false;
+  renderDecks();
+  window.scrollTo(0, 0);
+}
+
 statsBtn.addEventListener('click', function () {
   renderStats();
   decksScreen.hidden = true;
   statsScreen.hidden = false;
   window.scrollTo(0, 0);
+  pushScreen();
 });
 
-statsBackBtn.addEventListener('click', function () {
-  statsScreen.hidden = true;
-  decksScreen.hidden = false;
-  renderDecks();
-  window.scrollTo(0, 0);
+statsBackBtn.addEventListener('click', function () { navigateBack(); });
+
+// ---------- Назад: кнопка, свайп iPhone, свой жест от левого края ----------
+// Каждый переход вперёд записываем в историю браузера. Тогда системный свайп
+// слева направо (и кнопка «Назад» в Android) возвращает на прошлый экран.
+var pushedScreens = 0;   // сколько экранов открыто поверх списка колод (так должно быть)
+var historyDepth = 0;    // сколько записей реально лежит в истории браузера поверх первой
+var ignorePops = 0;      // сколько событий «назад» вызвали мы сами (их не обрабатываем)
+var popCount = 0;        // сколько раз браузер возвращался назад (для жеста)
+var historyTimer = null;
+
+// Догоняем историю браузера до нужной глубины. Браузер выполняет «назад»
+// не мгновенно, поэтому пока он занят, ничего не делаем: после его ответа
+// (popstate) вызываем эту функцию снова.
+function syncHistory() {
+  if (ignorePops > 0) {
+    return;
+  }
+  while (historyDepth < pushedScreens) {
+    try {
+      history.pushState({ trainbrain: true }, '');
+      historyDepth++;
+    } catch (e) {
+      historyDepth = pushedScreens; // без истории приложение работает, просто без системного свайпа
+      return;
+    }
+  }
+  if (historyDepth > pushedScreens) {
+    // Из самой первой записи назад не идём: можно выйти за пределы приложения
+    if (!history.state || history.state.root === true) {
+      historyDepth = pushedScreens;
+      return;
+    }
+    ignorePops++;
+    try {
+      history.back();
+    } catch (e) {
+      ignorePops--;
+      historyDepth = pushedScreens;
+      return;
+    }
+    // Страховка: если браузер не сообщил о возврате, через секунду считаем, что всё сошлось
+    clearTimeout(historyTimer);
+    historyTimer = setTimeout(function () {
+      if (ignorePops > 0) {
+        ignorePops = 0;
+        historyDepth = pushedScreens;
+        syncHistory();
+      }
+    }, 1000);
+  }
+}
+
+// Открыли экран поверх списка: запоминаем в истории
+function pushScreen() {
+  pushedScreens++;
+  syncHistory();
+}
+
+// Что значит «назад» на текущем экране
+function goBackOneScreen() {
+  if (!studyScreen.hidden) {
+    stopStudy();
+  } else if (!statsScreen.hidden) {
+    closeStatsScreen();
+  } else if (!deckScreen.hidden) {
+    showDecksScreen();
+  }
+}
+
+// Назад из приложения (кнопка или наш жест): экран меняем сразу,
+// историю догоняем следом
+function navigateBack() {
+  goBackOneScreen();
+  if (pushedScreens > 0) {
+    pushedScreens--;
+  }
+  syncHistory();
+}
+
+// Браузер вернулся назад: либо это наш «назад», либо системный свайп
+window.addEventListener('popstate', function () {
+  popCount++;
+  if (historyDepth > 0) {
+    historyDepth--;
+  }
+  if (ignorePops > 0) {
+    ignorePops--;
+    syncHistory(); // вдруг за это время открыли ещё экран
+    return;
+  }
+  if (pushedScreens > 0) {
+    pushedScreens--;
+  }
+  goBackOneScreen();
+  syncHistory();
 });
+
+try {
+  history.replaceState({ trainbrain: true, root: true }, '');
+} catch (e) {
+  // не страшно
+}
+
+// Свой жест: палец у левого края и вправо. На iPhone в приложении с иконки
+// системный свайп работает не везде, этот жест подстраховывает.
+var edgeSwipe = null;
+
+document.addEventListener('touchstart', function (event) {
+  var touch = event.touches[0];
+  edgeSwipe = event.touches.length === 1 && touch.clientX <= 28
+    ? { x: touch.clientX, y: touch.clientY, time: Date.now(), pops: popCount }
+    : null;
+}, { passive: true });
+
+document.addEventListener('touchcancel', function () {
+  edgeSwipe = null;
+}, { passive: true });
+
+document.addEventListener('touchend', function (event) {
+  if (!edgeSwipe) {
+    return;
+  }
+  var start = edgeSwipe;
+  edgeSwipe = null;
+  var touch = event.changedTouches[0];
+  var dx = touch.clientX - start.x;
+  var dy = Math.abs(touch.clientY - start.y);
+  if (dx > 70 && dy < 60 && Date.now() - start.time < 700) {
+    // Чуть ждём: если системный свайп сработал сам, второй раз назад не идём
+    setTimeout(function () {
+      if (popCount === start.pops && decksScreen.hidden) {
+        navigateBack();
+      }
+    }, 160);
+  }
+}, { passive: true });
 
 // ---------- Сохранность данных ----------
 // Просим браузер не стирать данные приложения, если на телефоне мало места.

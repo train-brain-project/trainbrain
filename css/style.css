@@ -264,8 +264,19 @@ input::placeholder {
 }
 
 /* Экран колоды */
-.back-btn {
+/* Кнопка «Назад» прилипает к верху экрана: не нужно листать вверх.
+   Фон и тень скрывают карточки, которые проезжают под кнопкой. */
+.big-button.back-btn {
+  position: sticky;
+  top: 6px;
+  z-index: 20;
   margin-bottom: 8px;
+  background: var(--bg);
+  box-shadow: 0 -8px 0 var(--bg), 0 6px 10px var(--bg);
+}
+
+.big-button.back-btn:active {
+  background: var(--surface-press);
 }
 
 .deck-title {
@@ -274,8 +285,42 @@ input::placeholder {
   overflow-wrap: anywhere;
 }
 
-.deck-card-count {
+/* Полоска и процент выученных карточек у колоды */
+.deck-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.deck-progress .progress-bar {
+  flex: 1;
+  min-width: 0;
+}
+
+.deck-percent {
+  flex: none;
+  min-width: 44px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.deck-progress-big {
   margin: 0 0 16px;
+}
+
+.deck-fill {
+  animation: fill-grow 0.7s ease-out;
+}
+
+@keyframes fill-grow {
+  from { width: 0; }
+}
+
+.deck-card-count {
+  margin: 0 0 4px;
   font-size: 16px;
   color: var(--muted);
 }
@@ -542,6 +587,7 @@ input::placeholder {
 }
 
 .progress-bar {
+  display: block;
   height: 8px;
   overflow: hidden;
   background: var(--field-bg);
@@ -550,6 +596,7 @@ input::placeholder {
 }
 
 .progress-fill {
+  display: block;
   width: 0;
   height: 100%;
   background: #57ab5a;
@@ -930,5 +977,9 @@ input.option-text {
   .deck-row:active,
   .big-button:active {
     transform: none;
+  }
+
+  .deck-fill {
+    animation: none;
   }
 }

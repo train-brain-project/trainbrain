@@ -21,6 +21,10 @@
     <button id="back-btn" class="big-button secondary back-btn" type="button">← Назад</button>
     <h2 id="deck-title" class="deck-title"></h2>
     <p id="deck-card-count" class="deck-card-count"></p>
+    <div class="deck-progress deck-progress-big">
+      <div class="progress-bar"><div id="deck-progress-fill" class="progress-fill"></div></div>
+      <span id="deck-progress-pct" class="deck-percent"></span>
+    </div>
     <button id="study-btn" class="big-button study-start" type="button">Учить</button>
 
     <details id="rules" class="rules">
@@ -33,6 +37,7 @@
           <li><b>«Знаю» или верный вариант:</b> +1 к счёту карточки. <b>«Не знаю» или ошибка:</b> счёт обнуляется.</li>
           <li><b>Выучено:</b> 2 верных ответа подряд в маленькой колоде, 3 в большой.</li>
           <li>В большой колоде карточки, которые вы знаете хуже, попадаются чаще.</li>
+          <li><b>Полоска и процент у колоды:</b> доля выученных карточек. Те, что ещё не выучены, в прогресс не входят.</li>
         </ul>
       </div>
     </details>
