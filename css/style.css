@@ -645,7 +645,8 @@ input.option-text {
 }
 
 /* Блок «Файлы» (импорт и экспорт): отдельно от остальных кнопок, цвет янтаря */
-.file-actions {
+.file-actions,
+.progress-actions {
   margin-top: 32px;
   padding-top: 16px;
   border-top: 1px dashed var(--border);
@@ -668,7 +669,8 @@ input.option-text {
   background: #ffbf5e;
 }
 
-.file-actions .form-hint {
+.file-actions .form-hint,
+.progress-actions .form-hint {
   margin-bottom: 14px;
 }
 

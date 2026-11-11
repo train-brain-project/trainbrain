@@ -322,6 +322,33 @@ function buildAllExport() {
   };
 }
 
+// ---------- Прогресс ----------
+
+// Карточка считается выученной, когда счёт 3 и больше (из 4)
+var LEARNED_SCORE = 3;
+
+function countLearned(cards) {
+  return (Array.isArray(cards) ? cards : []).filter(function (c) {
+    return typeof c.score === 'number' && c.score >= LEARNED_SCORE;
+  }).length;
+}
+
+// Сбрасываем прогресс всех карточек колоды: счёт в 0, «последний показ» очищаем.
+// Тексты и объяснения не трогаем. true, если получилось.
+function resetDeckProgress(deckId) {
+  var data = loadData();
+  for (var i = 0; i < data.decks.length; i++) {
+    if (data.decks[i].id === deckId) {
+      (data.decks[i].cards || []).forEach(function (card) {
+        card.score = 0;
+        card.lastSeenAt = null;
+      });
+      return saveData(data);
+    }
+  }
+  return false;
+}
+
 // ---------- Учёба ----------
 
 // Вес карточки: чем лучше знаешь (score 0..4), тем реже показываем. Не меньше 1.
@@ -516,6 +543,8 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    countLearned: countLearned,
+    resetDeckProgress: resetDeckProgress,
     buildCardFields: buildCardFields,
     pickNextCard: pickNextCard,
     recordAnswer: recordAnswer,

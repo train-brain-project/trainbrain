@@ -24,7 +24,7 @@
     <button id="study-btn" class="big-button study-start" type="button">Учить</button>
 
     <div id="card-list"></div>
-    <p id="cards-empty" class="empty-text" hidden>В этой колоде пока нет карточек</p>
+    <p id="cards-empty" class="empty-text" hidden>В этой колоде пока нет карточек. Нажмите «Новая карточка» ниже.</p>
 
     <button id="new-card-btn" class="big-button" type="button">Новая карточка</button>
 
@@ -34,6 +34,17 @@
       <button id="card-add-btn" class="big-button" type="button">Добавить</button>
       <button id="card-done-btn" class="big-button secondary" type="button">Готово</button>
     </div>
+
+    <section class="progress-actions">
+      <h3 class="file-title">Прогресс</h3>
+      <button id="reset-btn" class="big-button danger-outline" type="button">Сбросить прогресс колоды</button>
+      <div id="reset-confirm" class="edit-panel" hidden>
+        <p class="confirm-text">Сбросить прогресс всех карточек этой колоды? Карточки останутся, пропадёт только счёт «знаю».</p>
+        <button id="reset-yes-btn" class="big-button danger" type="button">Да, сбросить</button>
+        <button id="reset-no-btn" class="big-button secondary" type="button">Нет</button>
+      </div>
+      <p id="reset-hint" class="form-hint" role="status"></p>
+    </section>
 
     <section class="file-actions">
       <h3 class="file-title">Файлы</h3>
@@ -88,7 +99,7 @@
     <h2>Колоды</h2>
 
     <div id="deck-list"></div>
-    <p id="empty-text" class="empty-text" hidden>Пока нет колод</p>
+    <p id="empty-text" class="empty-text" hidden>Пока нет колод. Создайте свою или загрузите готовые в блоке «Файлы» внизу.</p>
 
     <button id="new-deck-btn" class="big-button" type="button">Новая колода</button>
 

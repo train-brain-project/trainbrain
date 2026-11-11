@@ -8,6 +8,14 @@ var formHint = document.getElementById('form-hint');
 var createBtn = document.getElementById('create-btn');
 var cancelBtn = document.getElementById('cancel-btn');
 
+// «Карточек: 20», а если что-то уже выучено, то «Карточек: 20 · выучено 5»
+function cardCountText(cards) {
+  var list = Array.isArray(cards) ? cards : [];
+  var text = 'Карточек: ' + list.length;
+  var learned = countLearned(list);
+  return learned > 0 ? text + ' · выучено ' + learned : text;
+}
+
 // Какая колода сейчас открыта на правку (null = никакая) и режим панели:
 // 'edit' (правка имени) или 'confirm' (вопрос об удалении)
 var editingId = null;
@@ -130,7 +138,7 @@ function renderDecks() {
 
     var count = document.createElement('span');
     count.className = 'deck-count';
-    count.textContent = 'Карточек: ' + (deck.cards ? deck.cards.length : 0);
+    count.textContent = cardCountText(deck.cards);
 
     row.appendChild(name);
     row.appendChild(count);
@@ -560,7 +568,7 @@ function renderDeckScreen(newCardId) {
   }
   var cards = Array.isArray(deck.cards) ? deck.cards : [];
   deckTitle.textContent = deck.name;
-  deckCardCount.textContent = 'Карточек: ' + cards.length;
+  deckCardCount.textContent = cardCountText(cards);
   cardList.textContent = '';
   if (editingCardId !== null && !cards.some(function (c) { return c.id === editingCardId; })) {
     editingCardId = null;
@@ -575,6 +583,7 @@ function renderDeckScreen(newCardId) {
   });
   cardsEmpty.hidden = cards.length > 0;
   studyBtn.hidden = cards.length === 0; // учить нечего, пока нет карточек
+  resetBtn.hidden = cards.length === 0;
 }
 
 // Показываем подсказку; для «Добавлено» (ok) она сама пропадает
@@ -649,6 +658,8 @@ function openDeckScreen(deckId) {
   }
   openDeckId = deckId;
   exportDeckHint.textContent = '';
+  resetHint.textContent = '';
+  resetConfirm.hidden = true;
   editingCardId = null;
   cardEditMode = 'edit';
   cardEditorSlot.textContent = '';
@@ -892,6 +903,35 @@ dontKnowBtn.addEventListener('click', function () { answerStudy(false); });
 studyBtn.addEventListener('click', startStudy);
 studyExitBtn.addEventListener('click', stopStudy);
 
+// ---------- Сброс прогресса колоды ----------
+var resetBtn = document.getElementById('reset-btn');
+var resetConfirm = document.getElementById('reset-confirm');
+var resetYesBtn = document.getElementById('reset-yes-btn');
+var resetNoBtn = document.getElementById('reset-no-btn');
+var resetHint = document.getElementById('reset-hint');
+
+function closeResetConfirm() {
+  resetConfirm.hidden = true;
+  resetBtn.hidden = false;
+}
+
+resetBtn.addEventListener('click', function () {
+  resetHint.textContent = '';
+  resetHint.classList.remove('ok');
+  resetBtn.hidden = true;
+  resetConfirm.hidden = false;
+});
+
+resetNoBtn.addEventListener('click', closeResetConfirm);
+
+resetYesBtn.addEventListener('click', function () {
+  var done = resetDeckProgress(openDeckId);
+  closeResetConfirm();
+  renderDeckScreen();
+  resetHint.textContent = done ? 'Прогресс сброшен' : 'Не удалось сбросить прогресс';
+  resetHint.classList.toggle('ok', done);
+});
+
 // ---------- Экспорт ----------
 // Имя файла без символов, которые нельзя в именах файлов
 function safeFileName(name) {
@@ -1063,6 +1103,17 @@ renderDecks();
 var appVersionEl = document.getElementById('app-version');
 if (appVersionEl && typeof APP_VERSION !== 'undefined') {
   appVersionEl.textContent = 'версия ' + APP_VERSION;
+}
+
+// ---------- Сохранность данных ----------
+// Просим браузер не стирать данные приложения, если на телефоне мало места.
+// Не у всех браузеров это есть, поэтому всё в try/catch.
+try {
+  if (navigator.storage && typeof navigator.storage.persist === 'function') {
+    navigator.storage.persist().catch(function () {});
+  }
+} catch (e) {
+  // ничего страшного: приложение работает и без этого
 }
 
 // ---------- Офлайн-режим ----------
