@@ -74,9 +74,40 @@ function getDecks() {
   return loadData().decks;
 }
 
+// Переименовываем колоду. Пустое имя или неизвестный id дают false.
+function renameDeck(id, newName) {
+  var cleanName = String(newName === undefined || newName === null ? '' : newName).trim();
+  if (!cleanName) {
+    return false;
+  }
+  var data = loadData();
+  for (var i = 0; i < data.decks.length; i++) {
+    if (data.decks[i].id === id) {
+      data.decks[i].name = cleanName;
+      return saveData(data);
+    }
+  }
+  return false;
+}
+
+// Удаляем колоду вместе со всеми её карточками. true, если получилось.
+function deleteDeck(id) {
+  var data = loadData();
+  var kept = data.decks.filter(function (deck) {
+    return deck.id !== id;
+  });
+  if (kept.length === data.decks.length) {
+    return false; // такой колоды нет
+  }
+  data.decks = kept;
+  return saveData(data);
+}
+
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    renameDeck: renameDeck,
+    deleteDeck: deleteDeck,
     loadData: loadData,
     saveData: saveData,
     createId: createId,

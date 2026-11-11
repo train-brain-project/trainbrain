@@ -11,7 +11,9 @@
   --button-bg-press: #6cb0ff; /* кнопка при нажатии */
   --button-text: #1c2128;   /* текст на кнопке */
   --error: #f47067;         /* подсказка об ошибке */
-  --field-bg: #1c2128;      /* фон поля ввода */
+  --danger: #e5534b;        /* опасное действие (удаление) */
+  --danger-press: #f47067;  /* опасная кнопка при нажатии */
+  --field-bg: #1c2128;     /* фон поля ввода */
   --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
@@ -58,12 +60,74 @@ h2 {
   display: none !important;
 }
 
-/* Строка колоды: крупная, на всю ширину */
+/* Элемент списка: строка колоды + кнопка «Изменить» рядом */
+.deck-item {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.edit-btn {
+  flex: none;
+  width: 64px;
+  min-height: 64px;
+  font-size: 28px;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.edit-btn:active {
+  background: var(--surface-press);
+}
+
+/* Панель правки под колодой */
+.edit-panel {
+  margin: -2px 0 14px;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  animation: fade-in 0.2s ease-out;
+}
+
+.edit-panel .big-button {
+  margin-bottom: 10px;
+}
+
+.confirm-text {
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+
+/* Опасные кнопки (удаление) */
+.big-button.danger {
+  color: var(--button-text);
+  background: var(--danger);
+}
+
+.big-button.danger:active {
+  background: var(--danger-press);
+}
+
+.big-button.danger-outline {
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid var(--danger);
+}
+
+.big-button.danger-outline:active {
+  background: var(--surface-press);
+}
+
+/* Строка колоды: крупная, занимает всё место кроме кнопки «Изменить» */
 .deck-row {
   display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 64px;
-  margin-bottom: 10px;
   padding: 10px 16px;
   text-align: left;
   font: inherit;
