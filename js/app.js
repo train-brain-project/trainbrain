@@ -571,6 +571,35 @@ importFile.addEventListener('change', function () {
   reader.readAsText(file);
 });
 
+// Готовые колоды лежат на сайте в decks/start.json (нужен интернет)
+var starterBtn = document.getElementById('starter-btn');
+var starterHint = document.getElementById('starter-hint');
+
+function showStarterHint(text, ok) {
+  starterHint.textContent = text;
+  starterHint.classList.toggle('ok', !!ok);
+}
+
+starterBtn.addEventListener('click', function () {
+  showStarterHint('Загружаю...', false);
+  fetch('decks/start.json', { cache: 'no-store' }).then(function (response) {
+    if (!response.ok) {
+      throw new Error('bad status');
+    }
+    return response.text();
+  }).then(function (text) {
+    var result = importFromText(text);
+    if (result.ok) {
+      renderDecks();
+      showStarterHint(importSummary(result) || 'Ничего не добавлено', result.added > 0);
+    } else {
+      showStarterHint(result.error, false);
+    }
+  }).catch(function () {
+    showStarterHint('Не получилось загрузить. Проверьте интернет', false);
+  });
+});
+
 // При запуске всегда показываем список колод
 renderDecks();
 
