@@ -26,8 +26,82 @@ h1 {
   text-align: center;
 }
 
-#message {
+h2 {
+  font-size: 26px;
+  margin: 8px 0 12px;
+}
+
+/* Атрибут hidden должен всегда прятать элемент */
+[hidden] {
+  display: none !important;
+}
+
+/* Строка колоды: крупная, на всю ширину */
+.deck-row {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  margin-bottom: 10px;
+  padding: 10px 16px;
+  text-align: left;
+  font: inherit;
+  color: #222;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.deck-row:active {
+  background: #e8eefc;
+}
+
+.deck-name {
+  display: block;
+  font-size: 22px;
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.deck-count {
+  display: block;
+  font-size: 14px;
+  color: #666;
+}
+
+.empty-text {
   text-align: center;
+  color: #666;
+  margin: 24px 0;
+}
+
+.new-deck-form {
+  margin-top: 8px;
+}
+
+.form-hint {
+  min-height: 24px;
+  margin: 8px 0;
+  font-size: 16px;
+  color: #c0392b;
+}
+
+.new-deck-form .big-button {
+  margin-bottom: 10px;
+}
+
+/* Кнопка «Отмена»: спокойный цвет */
+.big-button.secondary {
+  color: #2f6fed;
+  background: #e3eafc;
+}
+
+.big-button.secondary:active {
+  background: #cdd9f7;
+}
+
+#deck-list + .empty-text + .big-button {
+  margin-top: 16px;
 }
 
 /* Крупная кнопка на всю ширину (без hover-эффектов) */

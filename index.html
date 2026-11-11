@@ -17,11 +17,24 @@
 <body>
   <main class="app">
     <h1>TrainBrain</h1>
-    <p id="message">Карточки для учёбы</p>
-    <button id="start-btn" class="big-button" type="button">Начать</button>
+    <h2>Колоды</h2>
+
+    <div id="deck-list"></div>
+    <p id="empty-text" class="empty-text" hidden>Пока нет колод</p>
+
+    <button id="new-deck-btn" class="big-button" type="button">Новая колода</button>
+
+    <div id="new-deck-form" class="new-deck-form" hidden>
+      <input id="deck-name-input" type="text" maxlength="60"
+             placeholder="Название колоды" autocomplete="off">
+      <p id="form-hint" class="form-hint"></p>
+      <button id="create-btn" class="big-button" type="button">Создать</button>
+      <button id="cancel-btn" class="big-button secondary" type="button">Отмена</button>
+    </div>
   </main>
 
-  <!-- Обычный скрипт (не module), чтобы страница открывалась двойным щелчком -->
+  <!-- Обычные скрипты (не module). storage.js должен идти перед app.js -->
+  <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
