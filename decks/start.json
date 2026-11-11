@@ -86,11 +86,6 @@
      "example": "for (let row = 1; row <= 3; row++) {\n  for (let col = 1; col <= 4; col++) {\n    console.log(row, col);\n  }\n}"
     },
     {
-     "question": "Почему в цикле пишут let i, а не var i?",
-     "answer": "let действует только внутри блока { }, а var на всю функцию, из-за чего бывают неожиданности. let безопаснее. (Область видимости — место в коде, где переменную можно использовать.)",
-     "example": "for (let i = 0; i < 3; i++) { }\nconsole.log(i); // ошибка: за циклом i не существует"
-    },
-    {
      "question": "Что такое ошибка «на единицу» (off-by-one)?",
      "answer": "Цикл срабатывает на один раз больше или меньше, чем нужно. Типичный случай: i <= arr.length вместо i < arr.length. Тогда последний проход выходит за конец массива и даёт undefined (значение «ничего нет»).",
      "example": "const arr = [1, 2, 3];\nfor (let i = 0; i <= arr.length; i++) {\n  console.log(arr[i]); // 1, 2, 3, undefined\n}"
