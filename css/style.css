@@ -355,6 +355,55 @@ input::placeholder {
   color: var(--muted);
 }
 
+/* Значок ⓘ «Как проходит учёба» */
+.rules {
+  margin: 0 0 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.rules summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 14px;
+  font-size: 17px;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+}
+
+.rules summary::-webkit-details-marker {
+  display: none;
+}
+
+.rules-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.rules-body {
+  padding: 0 14px 12px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.rules-body ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.rules-body li {
+  margin-bottom: 8px;
+}
+
+.rules-intro {
+  margin: 0;
+  color: var(--text);
+}
+
 /* Полоска «Выучено X из N» */
 .study-progress {
   margin: 0 0 14px;

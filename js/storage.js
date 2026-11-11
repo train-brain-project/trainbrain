@@ -324,13 +324,18 @@ function buildAllExport() {
 
 // ---------- Прогресс ----------
 
-// Сколько верных ответов подряд (счёт) нужно, чтобы карточка считалась выученной.
-// В маленьких колодах (до 5 карточек) хватает 2, иначе одни и те же карточки
-// повторялись бы слишком часто. В остальных колодах нужно 3.
-var SMALL_DECK_SIZE = 5;
+// Маленькая колода: меньше 5 карточек. Её учим одним кругом, без повторов.
+// Колоды от 5 карточек учим до выученного.
+var BIG_DECK_FROM = 5;
 
+function isSmallDeck(cardCount) {
+  return cardCount < BIG_DECK_FROM;
+}
+
+// Сколько верных ответов подряд (счёт) нужно, чтобы карточка считалась выученной:
+// в маленькой колоде 2, в большой 3.
 function learnedThreshold(cardCount) {
-  return cardCount <= SMALL_DECK_SIZE ? 2 : 3;
+  return isSmallDeck(cardCount) ? 2 : 3;
 }
 
 function isLearned(card, threshold) {
@@ -581,6 +586,7 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    isSmallDeck: isSmallDeck,
     learnedThreshold: learnedThreshold,
     allLearned: allLearned,
     pickStudyCard: pickStudyCard,

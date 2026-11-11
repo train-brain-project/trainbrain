@@ -224,6 +224,8 @@ var cardList = document.getElementById('card-list');
 var cardsEmpty = document.getElementById('cards-empty');
 var newCardBtn = document.getElementById('new-card-btn');
 var newCardForm = document.getElementById('new-card-form');
+var rulesBox = document.getElementById('rules');
+var rulesIntro = document.getElementById('rules-intro');
 var cardEditorSlot = document.getElementById('card-editor-slot');
 var newCardEditor = null;   // редактор в форме «Новая карточка»
 var lastQuizMode = false;   // какой режим был у последней добавленной карточки
@@ -584,6 +586,33 @@ function renderDeckScreen(newCardId) {
   cardsEmpty.hidden = cards.length > 0;
   studyBtn.hidden = cards.length === 0; // учить нечего, пока нет карточек
   resetBtn.hidden = cards.length === 0;
+  rulesBox.hidden = cards.length === 0;
+  rulesIntro.textContent = rulesIntroText(cards.length);
+}
+
+// Склоняем «карточка»: 1 карточка, 2 карточки, 5 карточек
+function cardsWord(n) {
+  var last = n % 10;
+  var lastTwo = n % 100;
+  if (lastTwo >= 11 && lastTwo <= 14) {
+    return 'карточек';
+  }
+  if (last === 1) {
+    return 'карточка';
+  }
+  if (last >= 2 && last <= 4) {
+    return 'карточки';
+  }
+  return 'карточек';
+}
+
+// Строка в значке ⓘ: как будет проходить учёба именно этой колоды
+function rulesIntroText(count) {
+  var head = 'В этой колоде ' + count + ' ' + cardsWord(count) + ': ';
+  if (isSmallDeck(count)) {
+    return head + 'один круг, каждая карточка по одному разу.';
+  }
+  return head + 'учёба идёт, пока все карточки не станут выученными.';
 }
 
 // Показываем подсказку; для «Добавлено» (ok) она сама пропадает
@@ -697,6 +726,12 @@ var studyUnknown = 0;
 var studyBusy = false;    // пока карточка возвращается, нажатия игнорируем
 var studyTimer = null;
 
+// Режим сессии: 'round' (маленькая колода, один круг) или 'learn' (до выученного)
+var studyMode = 'learn';
+var studyQueue = [];      // круг: id карточек, которые ещё не показывали
+var studyRoundTotal = 0;  // круг: сколько карточек в этом круге
+var studyMissed = [];     // круг: id карточек, где были ошибки
+
 var studyProgressText = document.getElementById('study-progress-text');
 var studyProgressFill = document.getElementById('study-progress-fill');
 var studyDone = document.getElementById('study-done');
@@ -704,10 +739,19 @@ var studyDoneTitle = document.getElementById('study-done-title');
 var studyDoneText = document.getElementById('study-done-text');
 var studyAgainBtn = document.getElementById('study-again-btn');
 var studyDoneBtn = document.getElementById('study-done-btn');
+var studyRetryBtn = document.getElementById('study-retry-btn');
 
-// Счётчики ответов и полоска «Выучено X из N»
+// Счётчики ответов и полоска: «Выучено X из N» или в круге «Карточка k из N»
 function renderStudyStats() {
   studyStats.textContent = 'Знаю: ' + studyKnown + ' · Не знаю: ' + studyUnknown;
+  if (studyMode === 'round') {
+    var answered = studyKnown + studyUnknown;
+    studyProgressText.textContent = 'Карточка ' + Math.min(answered + 1, studyRoundTotal) +
+      ' из ' + studyRoundTotal;
+    studyProgressFill.style.width =
+      (studyRoundTotal > 0 ? Math.round(answered / studyRoundTotal * 100) : 0) + '%';
+    return;
+  }
   var deck = getDeck(openDeckId);
   var total = deck && Array.isArray(deck.cards) ? deck.cards.length : 0;
   var learned = deck ? countLearned(deck.cards) : 0;
@@ -726,10 +770,21 @@ function showStudyDone(initial) {
   studyAnswers.hidden = true;
   studyTip.textContent = '';
   renderStudyStats();
-  if (initial) {
+  studyRetryBtn.hidden = true;
+  if (studyMode === 'round') {
+    // Круг пройден
+    studyProgressText.textContent = 'Пройдено ' + studyRoundTotal + ' из ' + studyRoundTotal;
+    studyProgressFill.style.width = '100%';
+    studyDoneTitle.textContent = studyMissed.length === 0 ? 'Круг пройден без ошибок!' : 'Круг пройден!';
+    studyDoneText.textContent = 'Верно: ' + studyKnown + ', ошибок: ' + studyUnknown + '.';
+    studyRetryBtn.hidden = studyMissed.length === 0;
+    studyAgainBtn.textContent = 'Пройти колоду заново';
+  } else if (initial) {
+    studyAgainBtn.textContent = 'Сбросить прогресс и учить заново';
     studyDoneTitle.textContent = 'Вся колода уже выучена';
     studyDoneText.textContent = 'Можно начать заново: прогресс сбросится, а карточки останутся.';
   } else {
+    studyAgainBtn.textContent = 'Сбросить прогресс и учить заново';
     studyDoneTitle.textContent = 'Колода выучена!';
     studyDoneText.textContent = 'Ответов: ' + (studyKnown + studyUnknown) +
       '. Верно: ' + studyKnown + ', ошибок: ' + studyUnknown + '.';
@@ -825,6 +880,7 @@ function answerQuiz(index) {
     studyKnown++;
   } else {
     studyUnknown++;
+    studyMissed.push(studyCard.id);
   }
   renderStudyStats();
   studyTip.textContent = correct ? 'Верно!' : 'Неверно. Правильный ответ подсвечен зелёным';
@@ -873,16 +929,30 @@ function nextStudyCard(animate) {
     stopStudy();
     return;
   }
-  var card = pickStudyCard(deck.cards, studyLastId);
-  if (!card) {
-    showStudyDone(false); // невыученных не осталось
-    return;
+  var card = null;
+  if (studyMode === 'round') {
+    // Круг: берём следующую по очереди, каждая карточка один раз
+    while (!card && studyQueue.length > 0) {
+      var nextId = studyQueue.shift();
+      card = deck.cards.filter(function (c) { return c.id === nextId; })[0] || null;
+    }
+    if (!card) {
+      showStudyDone(false); // круг закончился
+      return;
+    }
+  } else {
+    card = pickStudyCard(deck.cards, studyLastId);
+    if (!card) {
+      showStudyDone(false); // невыученных не осталось
+      return;
+    }
   }
   studyLastId = card.id;
   showStudyCard(card, animate);
 }
 
-function startStudy() {
+// Начинаем учёбу. onlyIds (необязательно): пройти круг только по этим карточкам.
+function startStudy(onlyIds) {
   var deck = getDeck(openDeckId);
   if (!deck || !Array.isArray(deck.cards) || deck.cards.length === 0) {
     return;
@@ -890,11 +960,23 @@ function startStudy() {
   studyKnown = 0;
   studyUnknown = 0;
   studyLastId = null;
+  studyMissed = [];
   studyDone.hidden = true;
   flipCard.classList.remove('flipped');
   deckScreen.hidden = true;
   studyScreen.hidden = false;
   window.scrollTo(0, 0);
+  if (isSmallDeck(deck.cards.length)) {
+    // Маленькая колода: один круг, карточки в случайном порядке, без повторов
+    studyMode = 'round';
+    var ids = Array.isArray(onlyIds) ? onlyIds : deck.cards.map(function (c) { return c.id; });
+    studyQueue = shuffled(ids.length).map(function (i) { return ids[i]; });
+    studyRoundTotal = studyQueue.length;
+    renderStudyStats();
+    nextStudyCard(false);
+    return;
+  }
+  studyMode = 'learn';
   if (allLearned(deck.cards)) {
     showStudyDone(true);
     return;
@@ -932,6 +1014,7 @@ function answerStudy(known) {
     studyKnown++;
   } else {
     studyUnknown++;
+    studyMissed.push(studyCard.id);
   }
   renderStudyStats();
   nextStudyCard(true);
@@ -948,14 +1031,21 @@ quizNextBtn.addEventListener('click', function () {
 knowBtn.addEventListener('click', function () { answerStudy(true); });
 dontKnowBtn.addEventListener('click', function () { answerStudy(false); });
 studyAgainBtn.addEventListener('click', function () {
+  if (studyMode === 'round') {
+    startStudy(); // новый круг, прогресс карточек не сбрасываем
+    return;
+  }
   if (resetDeckProgress(openDeckId)) {
     startStudy();
   } else {
     studyDoneText.textContent = 'Не удалось сбросить прогресс';
   }
 });
+studyRetryBtn.addEventListener('click', function () {
+  startStudy(studyMissed.slice()); // копию: startStudy очищает список ошибок
+});
 studyDoneBtn.addEventListener('click', stopStudy);
-studyBtn.addEventListener('click', startStudy);
+studyBtn.addEventListener('click', function () { startStudy(); });
 studyExitBtn.addEventListener('click', stopStudy);
 
 // ---------- Сброс прогресса колоды ----------

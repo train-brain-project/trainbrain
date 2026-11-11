@@ -23,6 +23,20 @@
     <p id="deck-card-count" class="deck-card-count"></p>
     <button id="study-btn" class="big-button study-start" type="button">Учить</button>
 
+    <details id="rules" class="rules">
+      <summary><span class="rules-icon" aria-hidden="true">ⓘ</span> Как проходит учёба</summary>
+      <div class="rules-body">
+        <p id="rules-intro" class="rules-intro"></p>
+        <ul>
+          <li><b>Колода меньше 5 карточек:</b> один круг. Каждая карточка показывается один раз, без повторов. В конце можно повторить ошибки или пройти заново.</li>
+          <li><b>Колода от 5 карточек:</b> учёба идёт, пока все карточки не станут выученными. Ошибка возвращает карточку к началу.</li>
+          <li><b>«Знаю» или верный вариант:</b> +1 к счёту карточки. <b>«Не знаю» или ошибка:</b> счёт обнуляется.</li>
+          <li><b>Выучено:</b> 2 верных ответа подряд в маленькой колоде, 3 в большой.</li>
+          <li>В большой колоде карточки, которые вы знаете хуже, попадаются чаще.</li>
+        </ul>
+      </div>
+    </details>
+
     <div id="card-list"></div>
     <p id="cards-empty" class="empty-text" hidden>В этой колоде пока нет карточек. Нажмите «Новая карточка» ниже.</p>
 
@@ -66,6 +80,7 @@
     <div id="study-done" class="study-done" hidden>
       <h2 id="study-done-title" class="study-done-title"></h2>
       <p id="study-done-text" class="study-done-text"></p>
+      <button id="study-retry-btn" class="big-button" type="button" hidden>Повторить ошибки</button>
       <button id="study-again-btn" class="big-button" type="button">Сбросить прогресс и учить заново</button>
       <button id="study-done-btn" class="big-button secondary" type="button">К колоде</button>
     </div>
