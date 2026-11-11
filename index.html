@@ -121,6 +121,40 @@
     </div>
   </main>
 
+  <!-- Экран «Статистика»: всё считается на этом телефоне -->
+  <main id="stats-screen" class="app screen" hidden>
+    <button id="stats-back-btn" class="big-button secondary back-btn" type="button">← Назад</button>
+    <h2>Статистика</h2>
+    <p id="stats-empty" class="empty-text" hidden>Пока нет ответов. Начните учиться, и здесь появится статистика.</p>
+
+    <div class="stat-tiles">
+      <div class="stat-tile">
+        <span id="stat-today" class="stat-value">0</span>
+        <span id="stat-today-label" class="stat-label">ответов сегодня</span>
+        <span id="stat-today-sub" class="stat-sub"></span>
+      </div>
+      <div class="stat-tile">
+        <span id="stat-streak" class="stat-value">0</span>
+        <span id="stat-streak-label" class="stat-label">дней подряд</span>
+        <span id="stat-streak-sub" class="stat-sub"></span>
+      </div>
+      <div class="stat-tile">
+        <span id="stat-best" class="stat-value">0</span>
+        <span id="stat-best-label" class="stat-label">дней: рекорд серии</span>
+      </div>
+      <div class="stat-tile">
+        <span id="stat-learned" class="stat-value">0</span>
+        <span class="stat-label">выучено карточек</span>
+        <span id="stat-learned-sub" class="stat-sub"></span>
+      </div>
+    </div>
+
+    <h3 class="file-title">Последние 7 дней</h3>
+    <div id="stats-chart" class="stats-chart" role="img" aria-label="Ответы за последние 7 дней"></div>
+    <p class="chart-legend"><span class="dot ok"></span> верно <span class="dot bad"></span> ошибки</p>
+    <p id="stats-total" class="stats-total"></p>
+  </main>
+
   <main id="decks-screen" class="app screen">
     <h1>TrainBrain</h1>
     <h2>Колоды</h2>
@@ -137,6 +171,8 @@
       <button id="create-btn" class="big-button" type="button">Создать</button>
       <button id="cancel-btn" class="big-button secondary" type="button">Отмена</button>
     </div>
+
+    <button id="stats-btn" class="big-button secondary" type="button">Статистика</button>
 
     <section class="file-actions">
       <h3 class="file-title">Файлы</h3>

@@ -590,20 +590,25 @@ function renderDeckScreen(newCardId) {
   rulesIntro.textContent = rulesIntroText(cards.length);
 }
 
-// Склоняем «карточка»: 1 карточка, 2 карточки, 5 карточек
-function cardsWord(n) {
+// Склоняем слово по числу: 1 день, 2 дня, 5 дней (one, few, many)
+function pluralRu(n, one, few, many) {
   var last = n % 10;
   var lastTwo = n % 100;
   if (lastTwo >= 11 && lastTwo <= 14) {
-    return 'карточек';
+    return many;
   }
   if (last === 1) {
-    return 'карточка';
+    return one;
   }
   if (last >= 2 && last <= 4) {
-    return 'карточки';
+    return few;
   }
-  return 'карточек';
+  return many;
+}
+
+// 1 карточка, 2 карточки, 5 карточек
+function cardsWord(n) {
+  return pluralRu(n, 'карточка', 'карточки', 'карточек');
 }
 
 // Строка в значке ⓘ: как будет проходить учёба именно этой колоды
@@ -1249,6 +1254,96 @@ var appVersionEl = document.getElementById('app-version');
 if (appVersionEl && typeof APP_VERSION !== 'undefined') {
   appVersionEl.textContent = 'версия ' + APP_VERSION;
 }
+
+// ---------- Статистика ----------
+var statsScreen = document.getElementById('stats-screen');
+var statsBtn = document.getElementById('stats-btn');
+var statsBackBtn = document.getElementById('stats-back-btn');
+var statsChart = document.getElementById('stats-chart');
+
+function setText(id, text) {
+  document.getElementById(id).textContent = text;
+}
+
+// Рисуем экран «Статистика» из сводки
+function renderStats() {
+  var summary = getStatsSummary();
+  var decks = getDecks();
+  var learned = 0;
+  var total = 0;
+  decks.forEach(function (deck) {
+    var cards = Array.isArray(deck.cards) ? deck.cards : [];
+    learned += countLearned(cards);
+    total += cards.length;
+  });
+
+  document.getElementById('stats-empty').hidden = summary.totalAnswers > 0;
+
+  var today = summary.today;
+  setText('stat-today', String(today.answers));
+  setText('stat-today-label', pluralRu(today.answers, 'ответ', 'ответа', 'ответов') + ' сегодня');
+  setText('stat-today-sub', today.answers > 0
+    ? Math.round(today.correct / today.answers * 100) + '% верно'
+    : 'сегодня ещё не учились');
+
+  setText('stat-streak', String(summary.streak));
+  setText('stat-streak-label', pluralRu(summary.streak, 'день', 'дня', 'дней') + ' подряд');
+  setText('stat-streak-sub', summary.streak > 0 && today.answers === 0
+    ? 'ответьте сегодня, чтобы не прервать'
+    : '');
+
+  setText('stat-best', String(summary.best));
+  setText('stat-best-label', pluralRu(summary.best, 'день', 'дня', 'дней') + ': рекорд серии');
+
+  setText('stat-learned', String(learned));
+  setText('stat-learned-sub', 'из ' + total);
+
+  var max = 1;
+  summary.last7.forEach(function (day) {
+    max = Math.max(max, day.answers);
+  });
+  statsChart.textContent = '';
+  summary.last7.forEach(function (day, i) {
+    var col = document.createElement('div');
+    col.className = i === summary.last7.length - 1 ? 'chart-col today' : 'chart-col';
+    var count = document.createElement('span');
+    count.className = 'chart-count';
+    count.textContent = day.answers > 0 ? String(day.answers) : '';
+    var bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    var bad = document.createElement('div');
+    bad.className = 'bar-bad';
+    bad.style.height = ((day.answers - day.correct) / max * 100) + '%';
+    var ok = document.createElement('div');
+    ok.className = 'bar-ok';
+    ok.style.height = (day.correct / max * 100) + '%';
+    bar.appendChild(bad);
+    bar.appendChild(ok);
+    var label = document.createElement('span');
+    label.className = 'chart-label';
+    label.textContent = day.label;
+    col.appendChild(count);
+    col.appendChild(bar);
+    col.appendChild(label);
+    statsChart.appendChild(col);
+  });
+
+  setText('stats-total', 'Всего ответов: ' + summary.totalAnswers);
+}
+
+statsBtn.addEventListener('click', function () {
+  renderStats();
+  decksScreen.hidden = true;
+  statsScreen.hidden = false;
+  window.scrollTo(0, 0);
+});
+
+statsBackBtn.addEventListener('click', function () {
+  statsScreen.hidden = true;
+  decksScreen.hidden = false;
+  renderDecks();
+  window.scrollTo(0, 0);
+});
 
 // ---------- Сохранность данных ----------
 // Просим браузер не стирать данные приложения, если на телефоне мало места.

@@ -355,6 +355,131 @@ input::placeholder {
   color: var(--muted);
 }
 
+/* ---------- Статистика ---------- */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+}
+
+.stat-value {
+  font-family: var(--mono);
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.stat-label {
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.stat-sub {
+  min-height: 18px;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.stats-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 12px 8px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.chart-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.chart-count {
+  min-height: 20px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.chart-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 70%;
+  max-width: 36px;
+  height: 120px;
+}
+
+.bar-ok {
+  background: #57ab5a;
+  border-radius: 0 0 4px 4px;
+  transition: height 0.4s ease;
+}
+
+.bar-bad {
+  background: var(--danger);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.4s ease;
+}
+
+.chart-label {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.chart-col.today .chart-label {
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.chart-legend {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin: 0 4px 0 8px;
+  border-radius: 50%;
+}
+
+.dot.ok {
+  margin-left: 0;
+  background: #57ab5a;
+}
+
+.dot.bad {
+  background: var(--danger);
+}
+
+.stats-total {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 16px;
+  color: var(--muted);
+}
+
 /* Значок ⓘ «Как проходит учёба» */
 .rules {
   margin: 0 0 16px;

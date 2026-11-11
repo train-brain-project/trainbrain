@@ -322,6 +322,129 @@ function buildAllExport() {
   };
 }
 
+// ---------- Статистика по дням (только на этом телефоне) ----------
+// Хранится отдельно от колод: { days: { '2026-11-11': { answers: 12, correct: 9 } } }
+var STATS_KEY = 'trainbrain-stats';
+var STATS_KEEP_DAYS = 400;
+
+function twoDigits(n) {
+  return n < 10 ? '0' + n : String(n);
+}
+
+// Ключ дня по местному времени: «2026-11-11»
+function dayKey(timestamp) {
+  var d = new Date(timestamp);
+  return d.getFullYear() + '-' + twoDigits(d.getMonth() + 1) + '-' + twoDigits(d.getDate());
+}
+
+// Сдвиг ключа дня на n дней (через UTC, чтобы переход на летнее время не мешал)
+function shiftDayKey(key, n) {
+  var p = key.split('-');
+  var t = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) + n));
+  return t.getUTCFullYear() + '-' + twoDigits(t.getUTCMonth() + 1) + '-' + twoDigits(t.getUTCDate());
+}
+
+function loadStats() {
+  try {
+    var raw = localStorage.getItem(STATS_KEY);
+    if (!raw) {
+      return { days: {} };
+    }
+    var stats = JSON.parse(raw);
+    if (!stats || typeof stats !== 'object' || !stats.days || typeof stats.days !== 'object' ||
+        Array.isArray(stats.days)) {
+      return { days: {} };
+    }
+    return stats;
+  } catch (e) {
+    return { days: {} };
+  }
+}
+
+// Записываем один ответ в статистику дня. Ошибки здесь никогда не ломают учёбу.
+function recordDay(known, now) {
+  try {
+    var stats = loadStats();
+    var key = dayKey(now === undefined ? Date.now() : now);
+    var day = stats.days[key];
+    if (!day || typeof day.answers !== 'number' || typeof day.correct !== 'number') {
+      day = { answers: 0, correct: 0 };
+    }
+    day.answers++;
+    if (known) {
+      day.correct++;
+    }
+    stats.days[key] = day;
+    var keys = Object.keys(stats.days).sort();
+    while (keys.length > STATS_KEEP_DAYS) {
+      delete stats.days[keys.shift()];
+    }
+    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function dayStats(stats, key) {
+  var d = stats.days[key];
+  if (!d || typeof d.answers !== 'number' || d.answers <= 0) {
+    return { answers: 0, correct: 0 };
+  }
+  var correct = typeof d.correct === 'number' ? Math.max(0, Math.min(d.correct, d.answers)) : 0;
+  return { answers: d.answers, correct: correct };
+}
+
+// Сводка для экрана «Статистика»
+function getStatsSummary(now) {
+  var stats = loadStats();
+  var today = dayKey(now === undefined ? Date.now() : now);
+  var weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+  // Серия: подряд идущие дни с ответами, заканчивая сегодня (или вчера, если сегодня ещё не учились)
+  var streak = 0;
+  var cursor = dayStats(stats, today).answers > 0 ? today : shiftDayKey(today, -1);
+  while (dayStats(stats, cursor).answers > 0) {
+    streak++;
+    cursor = shiftDayKey(cursor, -1);
+  }
+
+  // Рекорд: самая длинная серия за всё время
+  var keys = Object.keys(stats.days).filter(function (k) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(k) && dayStats(stats, k).answers > 0;
+  }).sort();
+  var best = 0;
+  var run = 0;
+  var prev = null;
+  keys.forEach(function (k) {
+    run = prev !== null && shiftDayKey(prev, 1) === k ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = k;
+  });
+
+  var last7 = [];
+  for (var i = 6; i >= 0; i--) {
+    var key = shiftDayKey(today, -i);
+    var p = key.split('-');
+    var d = dayStats(stats, key);
+    last7.push({
+      key: key,
+      label: weekdays[new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getDay()],
+      answers: d.answers,
+      correct: d.correct
+    });
+  }
+
+  var totalAnswers = keys.reduce(function (sum, k) { return sum + dayStats(stats, k).answers; }, 0);
+  return {
+    today: dayStats(stats, today),
+    streak: streak,
+    best: Math.max(best, streak),
+    last7: last7,
+    totalAnswers: totalAnswers
+  };
+}
+
 // ---------- Прогресс ----------
 
 // Маленькая колода: меньше 5 карточек. Её учим одним кругом, без повторов.
@@ -436,6 +559,7 @@ function recordAnswer(deckId, cardId, known) {
   if (!saveData(data)) {
     return null;
   }
+  recordDay(known); // статистика дня; если не записалась, учёба всё равно идёт
   return found.card;
 }
 
@@ -586,6 +710,10 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    recordDay: recordDay,
+    getStatsSummary: getStatsSummary,
+    dayKey: dayKey,
+    shiftDayKey: shiftDayKey,
     isSmallDeck: isSmallDeck,
     learnedThreshold: learnedThreshold,
     allLearned: allLearned,
