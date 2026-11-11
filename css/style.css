@@ -453,6 +453,190 @@ input::placeholder {
   background: var(--danger-press);
 }
 
+/* Обратная сторона: объяснение чуть тише ответа */
+.explanation-label {
+  margin-top: 16px;
+}
+
+.flip-back .flip-explanation {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+/* ---------- Квиз ---------- */
+.quiz-question {
+  padding: 20px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 16px;
+  margin-bottom: 14px;
+}
+
+.quiz-question .flip-text {
+  font-size: 24px;
+}
+
+.quiz-options {
+  display: grid;
+  gap: 10px;
+}
+
+.quiz-option {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 16px;
+  font: inherit;
+  font-size: 20px;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  transition: background-color 0.25s ease, border-color 0.25s ease, opacity 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.quiz-option:active {
+  background: var(--surface-press);
+}
+
+.quiz-option.locked {
+  cursor: default;
+}
+
+/* Правильный вариант: зелёный. Неверно выбранный: красный. Остальные тускнеют. */
+.quiz-option.correct {
+  color: #d5f5d6;
+  background: #2b5a2f;
+  border-color: #57ab5a;
+}
+
+.quiz-option.wrong {
+  color: #ffd9d6;
+  background: #6b2a27;
+  border-color: var(--danger);
+}
+
+.quiz-option.dim {
+  opacity: 0.5;
+}
+
+.quiz-explanation {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid #f0a83a;
+  border-radius: 12px;
+  animation: fade-in 0.25s ease-out;
+}
+
+.quiz-explanation .flip-text {
+  font-size: 18px;
+}
+
+#quiz-next-btn {
+  margin-top: 14px;
+}
+
+/* ---------- Редактор карточки ---------- */
+.card-editor textarea {
+  min-height: 96px;
+  margin-bottom: 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mode-btn {
+  min-height: 52px;
+  font: inherit;
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  color: var(--button-text);
+  background: var(--accent);
+}
+
+.editor-note {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+input.option-radio {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin: 0;
+  accent-color: #57ab5a;
+}
+
+input.option-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.option-remove {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.add-option-btn {
+  min-height: 48px;
+  margin: 4px 0 12px;
+  font-size: 18px;
+}
+
+/* Варианты в списке карточек */
+.option-view {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.option-view.correct {
+  color: #7fd082;
+}
+
+.card-explanation {
+  font-size: 17px;
+  color: var(--muted);
+}
+
 /* Если в системе включено «уменьшить движение», переворот без анимации */
 @media (prefers-reduced-motion: reduce) {
   .flip-inner {

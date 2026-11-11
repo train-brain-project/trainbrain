@@ -216,8 +216,9 @@ var cardList = document.getElementById('card-list');
 var cardsEmpty = document.getElementById('cards-empty');
 var newCardBtn = document.getElementById('new-card-btn');
 var newCardForm = document.getElementById('new-card-form');
-var cardQuestion = document.getElementById('card-question');
-var cardAnswer = document.getElementById('card-answer');
+var cardEditorSlot = document.getElementById('card-editor-slot');
+var newCardEditor = null;   // редактор в форме «Новая карточка»
+var lastQuizMode = false;   // какой режим был у последней добавленной карточки
 var cardHint = document.getElementById('card-hint');
 var cardAddBtn = document.getElementById('card-add-btn');
 var cardDoneBtn = document.getElementById('card-done-btn');
@@ -228,6 +229,203 @@ var hintTimer = null;
 // Какая карточка сейчас правится (null = никакая) и режим: 'edit' или 'confirm'
 var editingCardId = null;
 var cardEditMode = 'edit';
+
+// ---------- Редактор карточки (и для новой, и для правки) ----------
+var editorCounter = 0;
+var MAX_OPTIONS = 6;
+
+function makeTextarea(className, placeholder, value) {
+  var t = document.createElement('textarea');
+  t.className = className;
+  t.rows = 3;
+  t.placeholder = placeholder;
+  t.setAttribute('aria-label', placeholder);
+  t.value = value || '';
+  return t;
+}
+
+// card = карточка для правки или null для новой; startQuiz = режим новой карточки.
+// Возвращает { el, read(), focus() }.
+function buildCardEditor(card, startQuiz) {
+  editorCounter++;
+  var groupName = 'correct-option-' + editorCounter;
+  var quiz = card ? Array.isArray(card.options) : !!startQuiz;
+
+  var root = document.createElement('div');
+  root.className = 'card-editor';
+
+  var question = makeTextarea('editor-question', 'Вопрос', card ? card.question : '');
+
+  // Переключатель: обычная карточка или квиз
+  var switchBox = document.createElement('div');
+  switchBox.className = 'mode-switch';
+  var plainBtn = document.createElement('button');
+  plainBtn.type = 'button';
+  plainBtn.className = 'mode-btn';
+  plainBtn.textContent = 'Обычная';
+  var quizBtn = document.createElement('button');
+  quizBtn.type = 'button';
+  quizBtn.className = 'mode-btn';
+  quizBtn.textContent = 'Квиз';
+  switchBox.appendChild(plainBtn);
+  switchBox.appendChild(quizBtn);
+
+  // Обычная: одно поле ответа
+  var plainBox = document.createElement('div');
+  var answer = makeTextarea('editor-answer', 'Ответ',
+    card && !Array.isArray(card.options) ? card.answer : '');
+  plainBox.appendChild(answer);
+
+  // Квиз: варианты и кружок у правильного
+  var quizBox = document.createElement('div');
+  quizBox.className = 'quiz-editor';
+  var note = document.createElement('p');
+  note.className = 'editor-note';
+  note.textContent = 'Впишите варианты и отметьте кружком правильный';
+  var rowsBox = document.createElement('div');
+  var addOptionBtn = document.createElement('button');
+  addOptionBtn.type = 'button';
+  addOptionBtn.className = 'big-button secondary add-option-btn';
+  addOptionBtn.textContent = '+ Вариант';
+  quizBox.appendChild(note);
+  quizBox.appendChild(rowsBox);
+  quizBox.appendChild(addOptionBtn);
+
+  function refreshRows() {
+    var rows = rowsBox.children;
+    for (var i = 0; i < rows.length; i++) {
+      var label = 'Вариант ' + (i + 1);
+      var input = rows[i].querySelector('.option-text');
+      input.placeholder = label;
+      input.setAttribute('aria-label', label);
+      rows[i].querySelector('.option-remove').hidden = rows.length <= 2;
+    }
+    addOptionBtn.hidden = rows.length >= MAX_OPTIONS;
+  }
+
+  function addRow(text, checked) {
+    var row = document.createElement('div');
+    row.className = 'option-row';
+    var radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = groupName;
+    radio.className = 'option-radio';
+    radio.checked = !!checked;
+    radio.setAttribute('aria-label', 'Правильный вариант');
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'option-text';
+    input.autocomplete = 'off';
+    input.value = text || '';
+    var remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'option-remove';
+    remove.textContent = '✕';
+    remove.setAttribute('aria-label', 'Убрать вариант');
+    remove.addEventListener('click', function () {
+      rowsBox.removeChild(row);
+      refreshRows();
+    });
+    row.appendChild(radio);
+    row.appendChild(input);
+    row.appendChild(remove);
+    rowsBox.appendChild(row);
+    refreshRows();
+    return input;
+  }
+
+  var startOptions = card && Array.isArray(card.options) ? card.options : [];
+  startOptions.forEach(function (text, i) {
+    addRow(text, i === card.correctIndex);
+  });
+  while (rowsBox.children.length < (startOptions.length ? 2 : 4)) {
+    addRow('', false);
+  }
+
+  addOptionBtn.addEventListener('click', function () {
+    if (rowsBox.children.length < MAX_OPTIONS) {
+      addRow('', false).focus();
+    }
+  });
+
+  var explanation = makeTextarea('editor-explanation',
+    'Объяснение (необязательно): почему так', card ? card.explanation : '');
+
+  function setMode(on) {
+    quiz = on;
+    plainBox.hidden = on;
+    quizBox.hidden = !on;
+    plainBtn.classList.toggle('active', !on);
+    quizBtn.classList.toggle('active', on);
+    plainBtn.setAttribute('aria-pressed', String(!on));
+    quizBtn.setAttribute('aria-pressed', String(on));
+  }
+  plainBtn.addEventListener('click', function () { setMode(false); });
+  quizBtn.addEventListener('click', function () { setMode(true); });
+  setMode(quiz);
+
+  root.appendChild(question);
+  root.appendChild(switchBox);
+  root.appendChild(plainBox);
+  root.appendChild(quizBox);
+  root.appendChild(explanation);
+
+  return {
+    el: root,
+    focus: function () { question.focus(); },
+    read: function () {
+      var texts = [];
+      var correct = -1;
+      Array.prototype.forEach.call(rowsBox.children, function (row, i) {
+        texts.push(row.querySelector('.option-text').value);
+        if (row.querySelector('.option-radio').checked) {
+          correct = i;
+        }
+      });
+      return {
+        quiz: quiz,
+        question: question.value,
+        answer: answer.value,
+        options: texts,
+        correctIndex: correct,
+        explanation: explanation.value
+      };
+    }
+  };
+}
+
+// Что не так в заполненном редакторе (пустая строка = всё хорошо)
+function editorError(v) {
+  if (!v.question.trim()) {
+    return 'Введите вопрос';
+  }
+  if (!v.quiz) {
+    return v.answer.trim() ? '' : 'Введите ответ';
+  }
+  var filled = v.options.map(function (t) { return t.trim(); }).filter(Boolean);
+  if (filled.length < 2) {
+    return 'Нужно минимум два варианта';
+  }
+  if (v.correctIndex < 0) {
+    return 'Отметьте кружком правильный вариант';
+  }
+  if (!v.options[v.correctIndex].trim()) {
+    return 'Правильный вариант не может быть пустым';
+  }
+  var unique = filled.filter(function (t, i) { return filled.indexOf(t) === i; });
+  if (unique.length !== filled.length) {
+    return 'Варианты не должны повторяться';
+  }
+  return '';
+}
+
+// Дополнительные поля карточки для addCard и updateCard
+function editorExtra(v) {
+  if (v.quiz) {
+    return { options: v.options, correctIndex: v.correctIndex, explanation: v.explanation };
+  }
+  return { options: null, explanation: v.explanation };
+}
 
 // Делаем одну «карточку в стиле кода»
 function buildCardItem(card, isNew) {
@@ -241,17 +439,42 @@ function buildCardItem(card, isNew) {
   q.className = 'card-text card-question';
   q.textContent = card.question; // textContent: текст безопасен
 
-  var aLabel = document.createElement('span');
-  aLabel.className = 'card-label';
-  aLabel.textContent = '// ответ';
-  var a = document.createElement('p');
-  a.className = 'card-text card-answer';
-  a.textContent = card.answer;
-
   item.appendChild(qLabel);
   item.appendChild(q);
-  item.appendChild(aLabel);
-  item.appendChild(a);
+
+  if (Array.isArray(card.options)) {
+    // Квиз: показываем варианты, правильный отмечен галочкой
+    var oLabel = document.createElement('span');
+    oLabel.className = 'card-label';
+    oLabel.textContent = '// варианты';
+    item.appendChild(oLabel);
+    card.options.forEach(function (text, i) {
+      var row = document.createElement('p');
+      row.className = i === card.correctIndex ? 'card-text option-view correct' : 'card-text option-view';
+      row.textContent = (i === card.correctIndex ? '✓ ' : '• ') + text;
+      item.appendChild(row);
+    });
+  } else {
+    var aLabel = document.createElement('span');
+    aLabel.className = 'card-label';
+    aLabel.textContent = '// ответ';
+    var a = document.createElement('p');
+    a.className = 'card-text card-answer';
+    a.textContent = card.answer;
+    item.appendChild(aLabel);
+    item.appendChild(a);
+  }
+
+  if (card.explanation) {
+    var eLabel = document.createElement('span');
+    eLabel.className = 'card-label';
+    eLabel.textContent = '// объяснение';
+    var e = document.createElement('p');
+    e.className = 'card-text card-explanation';
+    e.textContent = card.explanation;
+    item.appendChild(eLabel);
+    item.appendChild(e);
+  }
 
   var editBtn = document.createElement('button');
   editBtn.type = 'button';
@@ -261,7 +484,7 @@ function buildCardItem(card, isNew) {
     editingCardId = card.id;
     cardEditMode = 'edit';
     renderDeckScreen();
-    var field = cardList.querySelector('.card-edit-question');
+    var field = cardList.querySelector('.editor-question');
     if (field) {
       field.focus();
     }
@@ -304,26 +527,17 @@ function buildCardPanel(card) {
     return item;
   }
 
-  var q = document.createElement('textarea');
-  q.className = 'card-edit-question';
-  q.rows = 3;
-  q.setAttribute('aria-label', 'Вопрос');
-  q.value = card.question;
-  var a = document.createElement('textarea');
-  a.className = 'card-edit-answer';
-  a.rows = 3;
-  a.setAttribute('aria-label', 'Ответ');
-  a.value = card.answer;
-
-  item.appendChild(q);
-  item.appendChild(a);
+  var editor = buildCardEditor(card);
+  item.appendChild(editor.el);
   item.appendChild(hint);
   item.appendChild(makePanelButton('Сохранить', '', function () {
-    if (!q.value.trim() || !a.value.trim()) {
-      hint.textContent = 'Заполните вопрос и ответ';
+    var values = editor.read();
+    var problem = editorError(values);
+    if (problem) {
+      hint.textContent = problem;
       return;
     }
-    if (updateCard(openDeckId, card.id, q.value, a.value)) {
+    if (updateCard(openDeckId, card.id, values.question, values.answer, editorExtra(values))) {
       closeCardPanel();
     } else {
       hint.textContent = 'Не удалось сохранить карточку';
@@ -382,29 +596,42 @@ function closeCardForm() {
   setCardHint('', false);
 }
 
+// Ставим в форму чистый редактор (режим берём от прошлой карточки)
+function resetNewCardEditor() {
+  newCardEditor = buildCardEditor(null, lastQuizMode);
+  cardEditorSlot.textContent = '';
+  cardEditorSlot.appendChild(newCardEditor.el);
+}
+
 function openCardForm() {
   newCardForm.hidden = false;
   newCardBtn.hidden = true;
   setCardHint('', false);
-  cardQuestion.focus();
+  resetNewCardEditor();
+  newCardEditor.focus();
 }
 
 // Добавляем карточку из полей формы
 function submitCard() {
-  if (!cardQuestion.value.trim() || !cardAnswer.value.trim()) {
-    setCardHint('Заполните вопрос и ответ', false);
+  if (!newCardEditor) {
     return;
   }
-  var card = addCard(openDeckId, cardQuestion.value, cardAnswer.value);
+  var values = newCardEditor.read();
+  var problem = editorError(values);
+  if (problem) {
+    setCardHint(problem, false);
+    return;
+  }
+  var card = addCard(openDeckId, values.question, values.answer, editorExtra(values));
   if (!card) {
     setCardHint('Не удалось сохранить карточку', false);
     return;
   }
-  cardQuestion.value = '';
-  cardAnswer.value = '';
+  lastQuizMode = values.quiz;
+  resetNewCardEditor();
   renderDeckScreen(card.id);
   setCardHint('Добавлено', true);
-  cardQuestion.focus();
+  newCardEditor.focus();
 }
 
 function showDecksScreen() {
@@ -424,8 +651,8 @@ function openDeckScreen(deckId) {
   exportDeckHint.textContent = '';
   editingCardId = null;
   cardEditMode = 'edit';
-  cardQuestion.value = '';
-  cardAnswer.value = '';
+  cardEditorSlot.textContent = '';
+  newCardEditor = null;
   closeCardForm();
   renderDeckScreen();
   decksScreen.hidden = true;
@@ -463,11 +690,115 @@ function renderStudyStats() {
   studyStats.textContent = 'Знаю: ' + studyKnown + ' · Не знаю: ' + studyUnknown;
 }
 
+var quizBox = document.getElementById('quiz-box');
+var quizQuestion = document.getElementById('quiz-question');
+var quizOptions = document.getElementById('quiz-options');
+var quizExplanation = document.getElementById('quiz-explanation');
+var quizExplanationText = document.getElementById('quiz-explanation-text');
+var quizNextBtn = document.getElementById('quiz-next-btn');
+var backExplanationLabel = document.getElementById('study-back-explanation-label');
+var backExplanation = document.getElementById('study-back-explanation');
+var quizAnswered = false;   // на текущем квизе уже выбрали вариант
+
+// Объяснение на обратной стороне обычной карточки (если оно есть)
+function setBackExplanation(card) {
+  var has = !!card.explanation;
+  backExplanationLabel.hidden = !has;
+  backExplanation.hidden = !has;
+  backExplanation.textContent = has ? card.explanation : '';
+}
+
+// Перемешиваем порядок вариантов, чтобы правильный не стоял всегда на одном месте
+function shuffled(count) {
+  var order = [];
+  for (var i = 0; i < count; i++) {
+    order.push(i);
+  }
+  for (var j = count - 1; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var tmp = order[j];
+    order[j] = order[k];
+    order[k] = tmp;
+  }
+  return order;
+}
+
+// Показываем квиз: вопрос и кнопки с вариантами
+function showQuiz(card) {
+  flipCard.classList.remove('flipped');
+  flipCard.hidden = true;
+  studyBusy = false;
+  studyAnswers.hidden = true;
+  studyTip.textContent = 'Выберите правильный ответ';
+  quizAnswered = false;
+  quizBox.hidden = false;
+  quizQuestion.textContent = card.question;
+  quizExplanation.hidden = true;
+  quizNextBtn.hidden = true;
+  quizOptions.textContent = '';
+  shuffled(card.options.length).forEach(function (index) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quiz-option';
+    btn.textContent = card.options[index];
+    btn.dataset.index = String(index);
+    btn.addEventListener('click', function () {
+      answerQuiz(index);
+    });
+    quizOptions.appendChild(btn);
+  });
+}
+
+// Выбрали вариант: подсвечиваем, показываем объяснение, запоминаем ответ
+function answerQuiz(index) {
+  if (!studyCard || quizAnswered || !Array.isArray(studyCard.options)) {
+    return;
+  }
+  quizAnswered = true;
+  var correct = index === studyCard.correctIndex;
+  Array.prototype.forEach.call(quizOptions.children, function (btn) {
+    var btnIndex = Number(btn.dataset.index);
+    btn.classList.add('locked');
+    if (btnIndex === studyCard.correctIndex) {
+      btn.classList.add('correct');
+    } else if (btnIndex === index) {
+      btn.classList.add('wrong');
+    } else {
+      btn.classList.add('dim');
+    }
+  });
+  if (studyCard.explanation) {
+    quizExplanationText.textContent = studyCard.explanation;
+    quizExplanation.hidden = false;
+  }
+  quizNextBtn.hidden = false;
+  var saved = recordAnswer(openDeckId, studyCard.id, correct);
+  if (correct) {
+    studyKnown++;
+  } else {
+    studyUnknown++;
+  }
+  renderStudyStats();
+  studyTip.textContent = correct ? 'Верно!' : 'Неверно. Правильный ответ подсвечен зелёным';
+  if (!saved) {
+    studyTip.textContent = 'Не удалось сохранить ответ';
+  }
+  if (quizNextBtn.scrollIntoView) {
+    quizNextBtn.scrollIntoView({ block: 'nearest' });
+  }
+}
+
 // Показываем карточку. Ответ подставляем после того, как карточка
 // развернулась лицом, иначе на секунду мелькнёт чужой ответ.
 function showStudyCard(card, animate) {
   studyCard = card;
   clearTimeout(studyTimer);
+  if (Array.isArray(card.options)) {
+    showQuiz(card);
+    return;
+  }
+  quizBox.hidden = true;
+  flipCard.hidden = false;
   studyQuestion.textContent = card.question;
   var wasFlipped = flipCard.classList.contains('flipped');
   flipCard.classList.remove('flipped');
@@ -477,10 +808,12 @@ function showStudyCard(card, animate) {
     studyBusy = true;
     studyTimer = setTimeout(function () {
       studyAnswer.textContent = card.answer;
+      setBackExplanation(card);
       studyBusy = false;
     }, FLIP_MS + 20);
   } else {
     studyAnswer.textContent = card.answer;
+    setBackExplanation(card);
     studyBusy = false;
   }
 }
@@ -533,7 +866,7 @@ flipCard.addEventListener('click', function () {
 });
 
 function answerStudy(known) {
-  if (studyBusy || !studyCard || studyAnswers.hidden) {
+  if (studyBusy || !studyCard || studyAnswers.hidden || Array.isArray(studyCard.options)) {
     return;
   }
   var saved = recordAnswer(openDeckId, studyCard.id, known);
@@ -549,6 +882,11 @@ function answerStudy(known) {
   }
 }
 
+quizNextBtn.addEventListener('click', function () {
+  if (quizAnswered) {
+    nextStudyCard(false);
+  }
+});
 knowBtn.addEventListener('click', function () { answerStudy(true); });
 dontKnowBtn.addEventListener('click', function () { answerStudy(false); });
 studyBtn.addEventListener('click', startStudy);

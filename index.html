@@ -29,8 +29,7 @@
     <button id="new-card-btn" class="big-button" type="button">Новая карточка</button>
 
     <div id="new-card-form" class="new-deck-form" hidden>
-      <textarea id="card-question" rows="3" placeholder="Вопрос" aria-label="Вопрос"></textarea>
-      <textarea id="card-answer" rows="3" placeholder="Ответ" aria-label="Ответ"></textarea>
+      <div id="card-editor-slot"></div>
       <p id="card-hint" class="form-hint" role="status"></p>
       <button id="card-add-btn" class="big-button" type="button">Добавить</button>
       <button id="card-done-btn" class="big-button secondary" type="button">Готово</button>
@@ -57,9 +56,25 @@
         <span class="flip-face flip-back">
           <span class="card-label">// ответ</span>
           <span id="study-answer" class="flip-text"></span>
+          <span id="study-back-explanation-label" class="card-label explanation-label" hidden>// объяснение</span>
+          <span id="study-back-explanation" class="flip-text flip-explanation" hidden></span>
         </span>
       </span>
     </button>
+
+    <!-- Квиз: варианты ответа вместо переворота -->
+    <div id="quiz-box" class="quiz-box" hidden>
+      <div class="quiz-question">
+        <span class="card-label">// вопрос</span>
+        <span id="quiz-question" class="flip-text"></span>
+      </div>
+      <div id="quiz-options" class="quiz-options"></div>
+      <div id="quiz-explanation" class="quiz-explanation" hidden>
+        <span class="card-label">// объяснение</span>
+        <span id="quiz-explanation-text" class="flip-text"></span>
+      </div>
+      <button id="quiz-next-btn" class="big-button" type="button" hidden>Дальше</button>
+    </div>
 
     <p id="study-tip" class="study-tip">Нажмите на карточку, чтобы увидеть ответ</p>
     <div id="study-answers" class="study-answers" hidden>

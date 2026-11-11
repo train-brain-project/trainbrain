@@ -114,15 +114,68 @@ function getDeck(id) {
   return null;
 }
 
-// Добавляем карточку в колоду. Пробелы по краям убираем,
-// переносы строк внутри текста оставляем.
-// Пустой текст, неизвестная колода или ошибка сохранения дают null.
-function addCard(deckId, question, answer) {
-  var q = String(question === undefined || question === null ? '' : question).trim();
-  var a = String(answer === undefined || answer === null ? '' : answer).trim();
+// Обрезаем пробелы по краям; всё, что не текст, считаем пустым
+function cleanText(value) {
+  return String(value === undefined || value === null ? '' : value).trim();
+}
+
+// Собираем и проверяем поля карточки.
+// extra (необязательно): { options, correctIndex, explanation }.
+// Если есть options, это квиз: от 2 до 6 разных непустых вариантов и один правильный,
+// а answer становится текстом правильного варианта.
+// Возвращает объект полей или null, если что-то не так.
+function buildCardFields(question, answer, extra) {
+  var q = cleanText(question);
+  var a = cleanText(answer);
+  var ex = extra && typeof extra === 'object' ? extra : {};
+  var fields = {
+    question: q,
+    answer: a,
+    options: null,
+    correctIndex: null,
+    explanation: cleanText(ex.explanation) || null
+  };
+  if (ex.options !== undefined && ex.options !== null) {
+    if (!Array.isArray(ex.options) || !q) {
+      return null;
+    }
+    var options = [];
+    var correct = -1;
+    ex.options.forEach(function (option, i) {
+      var text = cleanText(option);
+      if (text) {
+        if (i === ex.correctIndex) {
+          correct = options.length;
+        }
+        options.push(text);
+      }
+    });
+    var unique = options.filter(function (t, i) { return options.indexOf(t) === i; });
+    if (options.length < 2 || options.length > 6 || correct < 0 || unique.length !== options.length) {
+      return null;
+    }
+    fields.options = options;
+    fields.correctIndex = correct;
+    fields.answer = options[correct];
+    return fields;
+  }
   if (!q || !a) {
     return null;
   }
+  return fields;
+}
+
+// Добавляем карточку в колоду. Пробелы по краям убираем,
+// переносы строк внутри текста оставляем.
+// Для квиза передайте extra: { options, correctIndex, explanation }.
+// Пустой текст, неизвестная колода или ошибка сохранения дают null.
+function addCard(deckId, question, answer, extra) {
+  var fields = buildCardFields(question, answer, extra);
+  if (!fields) {
+    return null;
+  }
+  var q = fields.question;
+  var a = fields.answer;
   var data = loadData();
   var deck = null;
   for (var i = 0; i < data.decks.length; i++) {
@@ -142,6 +195,9 @@ function addCard(deckId, question, answer) {
     id: createId(),
     question: q,
     answer: a,
+    options: fields.options,
+    correctIndex: fields.correctIndex,
+    explanation: fields.explanation,
     score: 0,
     lastSeenAt: null,
     createdAt: now,
@@ -174,19 +230,29 @@ function findCard(data, deckId, cardId) {
 
 // Меняем вопрос и ответ карточки. Остальные поля (счёт, уроки) не трогаем.
 // Пустой текст или неизвестная карточка дают null.
-function updateCard(deckId, cardId, question, answer) {
-  var q = String(question === undefined || question === null ? '' : question).trim();
-  var a = String(answer === undefined || answer === null ? '' : answer).trim();
-  if (!q || !a) {
-    return null;
-  }
+// extra как в addCard. Если extra не передали, квиз-поля карточки остаются прежними.
+function updateCard(deckId, cardId, question, answer, extra) {
   var data = loadData();
   var found = findCard(data, deckId, cardId);
   if (!found) {
     return null;
   }
-  found.card.question = q;
-  found.card.answer = a;
+  if (extra === undefined) {
+    extra = {
+      options: found.card.options,
+      correctIndex: found.card.correctIndex,
+      explanation: found.card.explanation
+    };
+  }
+  var fields = buildCardFields(question, answer, extra);
+  if (!fields) {
+    return null;
+  }
+  found.card.question = fields.question;
+  found.card.answer = fields.answer;
+  found.card.options = fields.options;
+  found.card.correctIndex = fields.correctIndex;
+  found.card.explanation = fields.explanation;
   found.card.updatedAt = Date.now();
   if (!saveData(data)) {
     return null;
@@ -213,6 +279,9 @@ function deckForExport(deck) {
       return {
         question: card.question,
         answer: card.answer,
+        options: Array.isArray(card.options) ? card.options : null,
+        correctIndex: Array.isArray(card.options) && typeof card.correctIndex === 'number' ? card.correctIndex : null,
+        explanation: card.explanation ? card.explanation : null,
         score: typeof card.score === 'number' ? card.score : 0,
         lastSeenAt: card.lastSeenAt === undefined ? null : card.lastSeenAt,
         createdAt: card.createdAt,
@@ -304,15 +373,26 @@ function recordAnswer(deckId, cardId, known) {
 
 // Превращаем карточку из файла в нормальную. Плохая карточка даёт null.
 function cleanImportedCard(raw) {
-  if (!raw || typeof raw !== 'object' || typeof raw.question !== 'string' ||
-      typeof raw.answer !== 'string') {
+  if (!raw || typeof raw !== 'object' || typeof raw.question !== 'string') {
     return null;
   }
-  var q = raw.question.trim();
-  var a = raw.answer.trim();
-  if (!q || !a) {
+  // Сначала пробуем как квиз; если варианты плохие, берём как обычную карточку
+  var fields = null;
+  if (Array.isArray(raw.options)) {
+    fields = buildCardFields(raw.question, raw.answer, {
+      options: raw.options,
+      correctIndex: raw.correctIndex,
+      explanation: raw.explanation
+    });
+  }
+  if (!fields && typeof raw.answer === 'string') {
+    fields = buildCardFields(raw.question, raw.answer, { explanation: raw.explanation });
+  }
+  if (!fields) {
     return null;
   }
+  var q = fields.question;
+  var a = fields.answer;
   var score = Math.round(Number(raw.score));
   if (!(score >= 0)) {
     score = 0;
@@ -328,6 +408,9 @@ function cleanImportedCard(raw) {
     id: createId(),
     question: q,
     answer: a,
+    options: fields.options,
+    correctIndex: fields.correctIndex,
+    explanation: fields.explanation,
     score: score,
     lastSeenAt: stamp(raw.lastSeenAt, null),
     createdAt: stamp(raw.createdAt, now),
@@ -341,7 +424,12 @@ function cleanImportedCard(raw) {
 // Подпись набора карточек (для сравнения колод): вопросы и ответы, порядок не важен
 function cardsSignature(cards) {
   return (Array.isArray(cards) ? cards : []).map(function (c) {
-    return JSON.stringify([String(c.question).trim(), String(c.answer).trim()]);
+    return JSON.stringify([
+      String(c.question).trim(),
+      String(c.answer).trim(),
+      Array.isArray(c.options) ? c.options : null,
+      c.explanation ? String(c.explanation).trim() : null
+    ]);
   }).sort().join('\n');
 }
 
@@ -428,6 +516,7 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    buildCardFields: buildCardFields,
     pickNextCard: pickNextCard,
     recordAnswer: recordAnswer,
     cardWeight: cardWeight,
