@@ -205,9 +205,59 @@ function deleteCard(deckId, cardId) {
   return saveData(data);
 }
 
+// Копия колоды для файла: имя и карточки (вместе со счётом и уроками)
+function deckForExport(deck) {
+  return {
+    name: deck.name,
+    cards: (Array.isArray(deck.cards) ? deck.cards : []).map(function (card) {
+      return {
+        question: card.question,
+        answer: card.answer,
+        score: typeof card.score === 'number' ? card.score : 0,
+        lastSeenAt: card.lastSeenAt === undefined ? null : card.lastSeenAt,
+        createdAt: card.createdAt,
+        updatedAt: card.updatedAt,
+        eli5: card.eli5 === undefined ? null : card.eli5,
+        example: card.example === undefined ? null : card.example,
+        puzzle: card.puzzle === undefined ? null : card.puzzle
+      };
+    })
+  };
+}
+
+// Файл с одной колодой (null, если колоды нет)
+function buildDeckExport(deckId) {
+  var deck = getDeck(deckId);
+  if (!deck) {
+    return null;
+  }
+  return {
+    format: 'flashcards-deck',
+    schemaVersion: 1,
+    exportedAt: Date.now(),
+    deck: deckForExport(deck)
+  };
+}
+
+// Файл со всеми колодами (null, если колод нет)
+function buildAllExport() {
+  var decks = getDecks();
+  if (decks.length === 0) {
+    return null;
+  }
+  return {
+    format: 'flashcards-backup',
+    schemaVersion: 1,
+    exportedAt: Date.now(),
+    decks: decks.map(deckForExport)
+  };
+}
+
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    buildDeckExport: buildDeckExport,
+    buildAllExport: buildAllExport,
     updateCard: updateCard,
     deleteCard: deleteCard,
     getDeck: getDeck,

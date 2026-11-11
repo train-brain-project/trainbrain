@@ -420,6 +420,7 @@ function openDeckScreen(deckId) {
     return;
   }
   openDeckId = deckId;
+  exportDeckHint.textContent = '';
   editingCardId = null;
   cardEditMode = 'edit';
   cardQuestion.value = '';
@@ -435,6 +436,83 @@ backBtn.addEventListener('click', showDecksScreen);
 newCardBtn.addEventListener('click', openCardForm);
 cardAddBtn.addEventListener('click', submitCard);
 cardDoneBtn.addEventListener('click', closeCardForm);
+
+// ---------- Экспорт ----------
+// Имя файла без символов, которые нельзя в именах файлов
+function safeFileName(name) {
+  var clean = String(name).replace(/[\\\/:*?"<>|\u0000-\u001f]/g, '').trim().slice(0, 40);
+  return clean || 'deck';
+}
+
+// Отдаём файл: сначала меню «Поделиться» (сохранить в Файлы и т.д.),
+// если его нет, обычное скачивание. Возвращает текст для подсказки.
+function exportFile(obj, fileName, hintEl) {
+  var text = JSON.stringify(obj, null, 2);
+  var file = null;
+  try {
+    file = new File([text], fileName, { type: 'application/json' });
+  } catch (e) {
+    file = null;
+  }
+
+  function download() {
+    try {
+      var url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+      var link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+      hintEl.textContent = 'Файл готов: ' + fileName;
+      hintEl.classList.add('ok');
+    } catch (e) {
+      hintEl.textContent = 'Не удалось сохранить файл';
+      hintEl.classList.remove('ok');
+    }
+  }
+
+  hintEl.classList.remove('ok');
+  hintEl.textContent = '';
+  if (file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: fileName }).then(function () {
+      hintEl.textContent = 'Файл отправлен';
+      hintEl.classList.add('ok');
+    }).catch(function (error) {
+      if (error && error.name === 'AbortError') {
+        return; // вы сами закрыли меню, это не ошибка
+      }
+      download();
+    });
+  } else {
+    download();
+  }
+}
+
+var exportDeckBtn = document.getElementById('export-deck-btn');
+var exportDeckHint = document.getElementById('export-deck-hint');
+var exportAllBtn = document.getElementById('export-all-btn');
+var exportAllHint = document.getElementById('export-all-hint');
+
+exportDeckBtn.addEventListener('click', function () {
+  var obj = buildDeckExport(openDeckId);
+  if (!obj) {
+    exportDeckHint.textContent = 'Не удалось найти колоду';
+    return;
+  }
+  exportFile(obj, 'trainbrain-' + safeFileName(obj.deck.name) + '.json', exportDeckHint);
+});
+
+exportAllBtn.addEventListener('click', function () {
+  var obj = buildAllExport();
+  if (!obj) {
+    exportAllHint.classList.remove('ok');
+    exportAllHint.textContent = 'Пока нет колод для экспорта';
+    return;
+  }
+  exportFile(obj, 'trainbrain-backup.json', exportAllHint);
+});
 
 // При запуске всегда показываем список колод
 renderDecks();
