@@ -225,6 +225,9 @@ var cardDoneBtn = document.getElementById('card-done-btn');
 // Id открытой колоды (null = мы на списке колод)
 var openDeckId = null;
 var hintTimer = null;
+// Какая карточка сейчас правится (null = никакая) и режим: 'edit' или 'confirm'
+var editingCardId = null;
+var cardEditMode = 'edit';
 
 // Делаем одну «карточку в стиле кода»
 function buildCardItem(card, isNew) {
@@ -249,6 +252,88 @@ function buildCardItem(card, isNew) {
   item.appendChild(q);
   item.appendChild(aLabel);
   item.appendChild(a);
+
+  var editBtn = document.createElement('button');
+  editBtn.type = 'button';
+  editBtn.className = 'big-button secondary card-edit-btn';
+  editBtn.textContent = 'Изменить';
+  editBtn.addEventListener('click', function () {
+    editingCardId = card.id;
+    cardEditMode = 'edit';
+    renderDeckScreen();
+    var field = cardList.querySelector('.card-edit-question');
+    if (field) {
+      field.focus();
+    }
+  });
+  item.appendChild(editBtn);
+  return item;
+}
+
+// Панель правки карточки: два поля, сохранить, удалить (с вопросом), отмена
+function buildCardPanel(card) {
+  var item = document.createElement('div');
+  item.className = 'card-item card-editing';
+
+  var hint = document.createElement('p');
+  hint.className = 'form-hint';
+
+  function closeCardPanel() {
+    editingCardId = null;
+    cardEditMode = 'edit';
+    renderDeckScreen();
+  }
+
+  if (cardEditMode === 'confirm') {
+    var question = document.createElement('p');
+    question.className = 'confirm-text';
+    question.textContent = 'Точно удалить карточку «' + card.question + '»?';
+    item.appendChild(question);
+    item.appendChild(hint);
+    item.appendChild(makePanelButton('Да, удалить', 'danger', function () {
+      if (deleteCard(openDeckId, card.id)) {
+        closeCardPanel();
+      } else {
+        hint.textContent = 'Не удалось удалить карточку';
+      }
+    }));
+    item.appendChild(makePanelButton('Нет', 'secondary', function () {
+      cardEditMode = 'edit';
+      renderDeckScreen();
+    }));
+    return item;
+  }
+
+  var q = document.createElement('textarea');
+  q.className = 'card-edit-question';
+  q.rows = 3;
+  q.setAttribute('aria-label', 'Вопрос');
+  q.value = card.question;
+  var a = document.createElement('textarea');
+  a.className = 'card-edit-answer';
+  a.rows = 3;
+  a.setAttribute('aria-label', 'Ответ');
+  a.value = card.answer;
+
+  item.appendChild(q);
+  item.appendChild(a);
+  item.appendChild(hint);
+  item.appendChild(makePanelButton('Сохранить', '', function () {
+    if (!q.value.trim() || !a.value.trim()) {
+      hint.textContent = 'Заполните вопрос и ответ';
+      return;
+    }
+    if (updateCard(openDeckId, card.id, q.value, a.value)) {
+      closeCardPanel();
+    } else {
+      hint.textContent = 'Не удалось сохранить карточку';
+    }
+  }));
+  item.appendChild(makePanelButton('Удалить карточку', 'danger-outline', function () {
+    cardEditMode = 'confirm';
+    renderDeckScreen();
+  }));
+  item.appendChild(makePanelButton('Отмена', 'secondary', closeCardPanel));
   return item;
 }
 
@@ -263,8 +348,16 @@ function renderDeckScreen(newCardId) {
   deckTitle.textContent = deck.name;
   deckCardCount.textContent = 'Карточек: ' + cards.length;
   cardList.textContent = '';
+  if (editingCardId !== null && !cards.some(function (c) { return c.id === editingCardId; })) {
+    editingCardId = null;
+    cardEditMode = 'edit';
+  }
   cards.forEach(function (card) {
-    cardList.appendChild(buildCardItem(card, card.id === newCardId));
+    if (card.id === editingCardId) {
+      cardList.appendChild(buildCardPanel(card));
+    } else {
+      cardList.appendChild(buildCardItem(card, card.id === newCardId));
+    }
   });
   cardsEmpty.hidden = cards.length > 0;
 }
@@ -327,6 +420,8 @@ function openDeckScreen(deckId) {
     return;
   }
   openDeckId = deckId;
+  editingCardId = null;
+  cardEditMode = 'edit';
   cardQuestion.value = '';
   cardAnswer.value = '';
   closeCardForm();

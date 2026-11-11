@@ -321,6 +321,21 @@ input::placeholder {
   margin-bottom: 8px;
 }
 
+.card-edit-btn {
+  margin-top: 10px;
+}
+
+.card-editing textarea {
+  min-height: 96px;
+  margin-bottom: 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.card-editing .big-button {
+  margin-bottom: 10px;
+}
+
 #new-card-form textarea {
   min-height: 96px; /* примерно 3 строки */
   margin-bottom: 10px;

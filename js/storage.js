@@ -157,9 +157,59 @@ function addCard(deckId, question, answer) {
   return card;
 }
 
+// Ищем карточку: возвращает { data, card, index, deck } или null
+function findCard(data, deckId, cardId) {
+  for (var i = 0; i < data.decks.length; i++) {
+    var deck = data.decks[i];
+    if (deck.id === deckId && Array.isArray(deck.cards)) {
+      for (var j = 0; j < deck.cards.length; j++) {
+        if (deck.cards[j].id === cardId) {
+          return { deck: deck, card: deck.cards[j], index: j };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// Меняем вопрос и ответ карточки. Остальные поля (счёт, уроки) не трогаем.
+// Пустой текст или неизвестная карточка дают null.
+function updateCard(deckId, cardId, question, answer) {
+  var q = String(question === undefined || question === null ? '' : question).trim();
+  var a = String(answer === undefined || answer === null ? '' : answer).trim();
+  if (!q || !a) {
+    return null;
+  }
+  var data = loadData();
+  var found = findCard(data, deckId, cardId);
+  if (!found) {
+    return null;
+  }
+  found.card.question = q;
+  found.card.answer = a;
+  found.card.updatedAt = Date.now();
+  if (!saveData(data)) {
+    return null;
+  }
+  return found.card;
+}
+
+// Удаляем одну карточку. true, если получилось.
+function deleteCard(deckId, cardId) {
+  var data = loadData();
+  var found = findCard(data, deckId, cardId);
+  if (!found) {
+    return false;
+  }
+  found.deck.cards.splice(found.index, 1);
+  return saveData(data);
+}
+
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    updateCard: updateCard,
+    deleteCard: deleteCard,
     getDeck: getDeck,
     addCard: addCard,
     renameDeck: renameDeck,
