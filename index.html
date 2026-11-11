@@ -16,7 +16,27 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <main class="app">
+  <!-- Экран «Колода»: список карточек и добавление -->
+  <main id="deck-screen" class="app screen" hidden>
+    <button id="back-btn" class="big-button secondary back-btn" type="button">← Назад</button>
+    <h2 id="deck-title" class="deck-title"></h2>
+    <p id="deck-card-count" class="deck-card-count"></p>
+
+    <div id="card-list"></div>
+    <p id="cards-empty" class="empty-text" hidden>В этой колоде пока нет карточек</p>
+
+    <button id="new-card-btn" class="big-button" type="button">Новая карточка</button>
+
+    <div id="new-card-form" class="new-deck-form" hidden>
+      <textarea id="card-question" rows="3" placeholder="Вопрос" aria-label="Вопрос"></textarea>
+      <textarea id="card-answer" rows="3" placeholder="Ответ" aria-label="Ответ"></textarea>
+      <p id="card-hint" class="form-hint" role="status"></p>
+      <button id="card-add-btn" class="big-button" type="button">Добавить</button>
+      <button id="card-done-btn" class="big-button secondary" type="button">Готово</button>
+    </div>
+  </main>
+
+  <main id="decks-screen" class="app screen">
     <h1>TrainBrain</h1>
     <h2>Колоды</h2>
 

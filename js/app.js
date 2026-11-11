@@ -134,7 +134,10 @@ function renderDecks() {
 
     row.appendChild(name);
     row.appendChild(count);
-    // Нажатие на колоду пока ничего не делает (экран колоды будет в шаге 6)
+    // Нажатие на строку колоды открывает экран колоды
+    row.addEventListener('click', function () {
+      openDeckScreen(deck.id);
+    });
     item.appendChild(row);
 
     // Кнопка «Изменить» рядом с названием
@@ -203,4 +206,140 @@ deckNameInput.addEventListener('keydown', function (event) {
   }
 });
 
+// ---------- Экран колоды ----------
+var decksScreen = document.getElementById('decks-screen');
+var deckScreen = document.getElementById('deck-screen');
+var backBtn = document.getElementById('back-btn');
+var deckTitle = document.getElementById('deck-title');
+var deckCardCount = document.getElementById('deck-card-count');
+var cardList = document.getElementById('card-list');
+var cardsEmpty = document.getElementById('cards-empty');
+var newCardBtn = document.getElementById('new-card-btn');
+var newCardForm = document.getElementById('new-card-form');
+var cardQuestion = document.getElementById('card-question');
+var cardAnswer = document.getElementById('card-answer');
+var cardHint = document.getElementById('card-hint');
+var cardAddBtn = document.getElementById('card-add-btn');
+var cardDoneBtn = document.getElementById('card-done-btn');
+
+// Id открытой колоды (null = мы на списке колод)
+var openDeckId = null;
+var hintTimer = null;
+
+// Делаем одну «карточку в стиле кода»
+function buildCardItem(card, isNew) {
+  var item = document.createElement('div');
+  item.className = isNew ? 'card-item new' : 'card-item';
+
+  var qLabel = document.createElement('span');
+  qLabel.className = 'card-label';
+  qLabel.textContent = '// вопрос';
+  var q = document.createElement('p');
+  q.className = 'card-text card-question';
+  q.textContent = card.question; // textContent: текст безопасен
+
+  var aLabel = document.createElement('span');
+  aLabel.className = 'card-label';
+  aLabel.textContent = '// ответ';
+  var a = document.createElement('p');
+  a.className = 'card-text card-answer';
+  a.textContent = card.answer;
+
+  item.appendChild(qLabel);
+  item.appendChild(q);
+  item.appendChild(aLabel);
+  item.appendChild(a);
+  return item;
+}
+
+// Рисуем заголовок и список карточек открытой колоды
+function renderDeckScreen(newCardId) {
+  var deck = getDeck(openDeckId);
+  if (!deck) {
+    showDecksScreen();
+    return;
+  }
+  var cards = Array.isArray(deck.cards) ? deck.cards : [];
+  deckTitle.textContent = deck.name;
+  deckCardCount.textContent = 'Карточек: ' + cards.length;
+  cardList.textContent = '';
+  cards.forEach(function (card) {
+    cardList.appendChild(buildCardItem(card, card.id === newCardId));
+  });
+  cardsEmpty.hidden = cards.length > 0;
+}
+
+// Показываем подсказку; для «Добавлено» (ok) она сама пропадает
+function setCardHint(text, ok) {
+  clearTimeout(hintTimer);
+  cardHint.textContent = text;
+  cardHint.classList.toggle('ok', !!ok);
+  if (ok) {
+    hintTimer = setTimeout(function () {
+      cardHint.textContent = '';
+      cardHint.classList.remove('ok');
+    }, 1500);
+  }
+}
+
+function closeCardForm() {
+  newCardForm.hidden = true;
+  newCardBtn.hidden = false;
+  setCardHint('', false);
+}
+
+function openCardForm() {
+  newCardForm.hidden = false;
+  newCardBtn.hidden = true;
+  setCardHint('', false);
+  cardQuestion.focus();
+}
+
+// Добавляем карточку из полей формы
+function submitCard() {
+  if (!cardQuestion.value.trim() || !cardAnswer.value.trim()) {
+    setCardHint('Заполните вопрос и ответ', false);
+    return;
+  }
+  var card = addCard(openDeckId, cardQuestion.value, cardAnswer.value);
+  if (!card) {
+    setCardHint('Не удалось сохранить карточку', false);
+    return;
+  }
+  cardQuestion.value = '';
+  cardAnswer.value = '';
+  renderDeckScreen(card.id);
+  setCardHint('Добавлено', true);
+  cardQuestion.focus();
+}
+
+function showDecksScreen() {
+  openDeckId = null;
+  closeCardForm();
+  deckScreen.hidden = true;
+  decksScreen.hidden = false;
+  renderDecks(); // обновляем счётчики карточек
+  window.scrollTo(0, 0);
+}
+
+function openDeckScreen(deckId) {
+  if (!getDeck(deckId)) {
+    return;
+  }
+  openDeckId = deckId;
+  cardQuestion.value = '';
+  cardAnswer.value = '';
+  closeCardForm();
+  renderDeckScreen();
+  decksScreen.hidden = true;
+  deckScreen.hidden = false;
+  window.scrollTo(0, 0);
+}
+
+backBtn.addEventListener('click', showDecksScreen);
+newCardBtn.addEventListener('click', openCardForm);
+cardAddBtn.addEventListener('click', submitCard);
+cardDoneBtn.addEventListener('click', closeCardForm);
+
+// При запуске всегда показываем список колод
 renderDecks();

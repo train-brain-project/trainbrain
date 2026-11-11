@@ -252,6 +252,87 @@ input::placeholder {
   animation: fade-in 0.2s ease-out;
 }
 
+/* Экраны: при показе плавно появляются (~200 мс) */
+.screen {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Экран колоды */
+.back-btn {
+  margin-bottom: 8px;
+}
+
+.deck-title {
+  font-size: 26px;
+  margin: 12px 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.deck-card-count {
+  margin: 0 0 16px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* Карточка в стиле кода: тёмная плашка с акцентной полоской слева */
+.card-item {
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+}
+
+/* Плавно появляется только что добавленная карточка */
+.card-item.new {
+  animation: fade-in 0.2s ease-out;
+}
+
+.card-label {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.card-label:first-child {
+  margin-top: 0;
+}
+
+.card-text {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.card-question {
+  font-size: 20px;
+  color: var(--text);
+}
+
+.card-answer {
+  font-size: 18px;
+  color: var(--muted);
+}
+
+#card-list {
+  margin-bottom: 8px;
+}
+
+#new-card-form textarea {
+  min-height: 96px; /* примерно 3 строки */
+  margin-bottom: 10px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Короткая заметка «Добавлено» — приятного зелёного цвета */
+.form-hint.ok {
+  color: #57ab5a;
+}
+
 /* Если в телефоне включено «уменьшить движение» — всё без анимаций */
 @media (prefers-reduced-motion: reduce) {
   *,

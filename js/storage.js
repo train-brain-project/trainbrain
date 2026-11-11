@@ -103,9 +103,65 @@ function deleteDeck(id) {
   return saveData(data);
 }
 
+// Одна колода по id (или null, если такой нет)
+function getDeck(id) {
+  var decks = loadData().decks;
+  for (var i = 0; i < decks.length; i++) {
+    if (decks[i].id === id) {
+      return decks[i];
+    }
+  }
+  return null;
+}
+
+// Добавляем карточку в колоду. Пробелы по краям убираем,
+// переносы строк внутри текста оставляем.
+// Пустой текст, неизвестная колода или ошибка сохранения дают null.
+function addCard(deckId, question, answer) {
+  var q = String(question === undefined || question === null ? '' : question).trim();
+  var a = String(answer === undefined || answer === null ? '' : answer).trim();
+  if (!q || !a) {
+    return null;
+  }
+  var data = loadData();
+  var deck = null;
+  for (var i = 0; i < data.decks.length; i++) {
+    if (data.decks[i].id === deckId) {
+      deck = data.decks[i];
+      break;
+    }
+  }
+  if (!deck) {
+    return null;
+  }
+  if (!Array.isArray(deck.cards)) {
+    deck.cards = [];
+  }
+  var now = Date.now();
+  var card = {
+    id: createId(),
+    question: q,
+    answer: a,
+    score: 0,
+    lastSeenAt: null,
+    createdAt: now,
+    updatedAt: now,
+    eli5: null,
+    example: null,
+    puzzle: null
+  };
+  deck.cards.push(card);
+  if (!saveData(data)) {
+    return null;
+  }
+  return card;
+}
+
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    getDeck: getDeck,
+    addCard: addCard,
     renameDeck: renameDeck,
     deleteDeck: deleteDeck,
     loadData: loadData,
