@@ -324,13 +324,23 @@ function buildAllExport() {
 
 // ---------- Прогресс ----------
 
-// Карточка считается выученной, когда счёт 3 и больше (из 4)
-var LEARNED_SCORE = 3;
+// Сколько верных ответов подряд (счёт) нужно, чтобы карточка считалась выученной.
+// В маленьких колодах (до 5 карточек) хватает 2, иначе одни и те же карточки
+// повторялись бы слишком часто. В остальных колодах нужно 3.
+var SMALL_DECK_SIZE = 5;
+
+function learnedThreshold(cardCount) {
+  return cardCount <= SMALL_DECK_SIZE ? 2 : 3;
+}
+
+function isLearned(card, threshold) {
+  return typeof card.score === 'number' && card.score >= threshold;
+}
 
 function countLearned(cards) {
-  return (Array.isArray(cards) ? cards : []).filter(function (c) {
-    return typeof c.score === 'number' && c.score >= LEARNED_SCORE;
-  }).length;
+  var list = Array.isArray(cards) ? cards : [];
+  var threshold = learnedThreshold(list.length);
+  return list.filter(function (c) { return isLearned(c, threshold); }).length;
 }
 
 // Сбрасываем прогресс всех карточек колоды: счёт в 0, «последний показ» очищаем.
@@ -391,8 +401,9 @@ function pickStudyCard(cards, lastId, rng) {
   if (!Array.isArray(cards) || cards.length === 0) {
     return null;
   }
+  var threshold = learnedThreshold(cards.length);
   var unlearned = cards.filter(function (c) {
-    return !(typeof c.score === 'number' && c.score >= LEARNED_SCORE);
+    return !isLearned(c, threshold);
   });
   if (unlearned.length === 0) {
     return null;
@@ -570,6 +581,7 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    learnedThreshold: learnedThreshold,
     allLearned: allLearned,
     pickStudyCard: pickStudyCard,
     countLearned: countLearned,
