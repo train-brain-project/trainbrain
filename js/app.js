@@ -360,6 +360,7 @@ function renderDeckScreen(newCardId) {
     }
   });
   cardsEmpty.hidden = cards.length > 0;
+  studyBtn.hidden = cards.length === 0; // учить нечего, пока нет карточек
 }
 
 // Показываем подсказку; для «Добавлено» (ok) она сама пропадает
@@ -436,6 +437,122 @@ backBtn.addEventListener('click', showDecksScreen);
 newCardBtn.addEventListener('click', openCardForm);
 cardAddBtn.addEventListener('click', submitCard);
 cardDoneBtn.addEventListener('click', closeCardForm);
+
+// ---------- Учёба ----------
+var studyScreen = document.getElementById('study-screen');
+var studyBtn = document.getElementById('study-btn');
+var studyExitBtn = document.getElementById('study-exit-btn');
+var studyStats = document.getElementById('study-stats');
+var flipCard = document.getElementById('flip-card');
+var studyQuestion = document.getElementById('study-question');
+var studyAnswer = document.getElementById('study-answer');
+var studyTip = document.getElementById('study-tip');
+var studyAnswers = document.getElementById('study-answers');
+var knowBtn = document.getElementById('know-btn');
+var dontKnowBtn = document.getElementById('dontknow-btn');
+
+var FLIP_MS = 500; // столько длится переворот (как в CSS)
+var studyCard = null;     // карточка на экране
+var studyLastId = null;   // предыдущая карточка (чтобы не повторять подряд)
+var studyKnown = 0;
+var studyUnknown = 0;
+var studyBusy = false;    // пока карточка возвращается, нажатия игнорируем
+var studyTimer = null;
+
+function renderStudyStats() {
+  studyStats.textContent = 'Знаю: ' + studyKnown + ' · Не знаю: ' + studyUnknown;
+}
+
+// Показываем карточку. Ответ подставляем после того, как карточка
+// развернулась лицом, иначе на секунду мелькнёт чужой ответ.
+function showStudyCard(card, animate) {
+  studyCard = card;
+  clearTimeout(studyTimer);
+  studyQuestion.textContent = card.question;
+  var wasFlipped = flipCard.classList.contains('flipped');
+  flipCard.classList.remove('flipped');
+  studyAnswers.hidden = true;
+  studyTip.textContent = 'Нажмите на карточку, чтобы увидеть ответ';
+  if (animate && wasFlipped) {
+    studyBusy = true;
+    studyTimer = setTimeout(function () {
+      studyAnswer.textContent = card.answer;
+      studyBusy = false;
+    }, FLIP_MS + 20);
+  } else {
+    studyAnswer.textContent = card.answer;
+    studyBusy = false;
+  }
+}
+
+// Берём следующую карточку по весам и показываем
+function nextStudyCard(animate) {
+  var deck = getDeck(openDeckId);
+  var card = deck ? pickNextCard(deck.cards, studyLastId) : null;
+  if (!card) {
+    stopStudy();
+    return;
+  }
+  studyLastId = card.id;
+  showStudyCard(card, animate);
+}
+
+function startStudy() {
+  var deck = getDeck(openDeckId);
+  if (!deck || !Array.isArray(deck.cards) || deck.cards.length === 0) {
+    return;
+  }
+  studyKnown = 0;
+  studyUnknown = 0;
+  studyLastId = null;
+  renderStudyStats();
+  flipCard.classList.remove('flipped');
+  deckScreen.hidden = true;
+  studyScreen.hidden = false;
+  window.scrollTo(0, 0);
+  nextStudyCard(false);
+}
+
+function stopStudy() {
+  clearTimeout(studyTimer);
+  studyBusy = false;
+  studyCard = null;
+  studyScreen.hidden = true;
+  deckScreen.hidden = false;
+  renderDeckScreen();
+  window.scrollTo(0, 0);
+}
+
+flipCard.addEventListener('click', function () {
+  if (studyBusy || !studyCard) {
+    return;
+  }
+  var flipped = flipCard.classList.toggle('flipped');
+  studyAnswers.hidden = !flipped;
+  studyTip.textContent = flipped ? 'Вы знали ответ?' : 'Нажмите на карточку, чтобы увидеть ответ';
+});
+
+function answerStudy(known) {
+  if (studyBusy || !studyCard || studyAnswers.hidden) {
+    return;
+  }
+  var saved = recordAnswer(openDeckId, studyCard.id, known);
+  if (known) {
+    studyKnown++;
+  } else {
+    studyUnknown++;
+  }
+  renderStudyStats();
+  nextStudyCard(true);
+  if (!saved) {
+    studyTip.textContent = 'Не удалось сохранить ответ';
+  }
+}
+
+knowBtn.addEventListener('click', function () { answerStudy(true); });
+dontKnowBtn.addEventListener('click', function () { answerStudy(false); });
+studyBtn.addEventListener('click', startStudy);
+studyExitBtn.addEventListener('click', stopStudy);
 
 // ---------- Экспорт ----------
 // Имя файла без символов, которые нельзя в именах файлов

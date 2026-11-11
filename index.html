@@ -21,6 +21,7 @@
     <button id="back-btn" class="big-button secondary back-btn" type="button">← Назад</button>
     <h2 id="deck-title" class="deck-title"></h2>
     <p id="deck-card-count" class="deck-card-count"></p>
+    <button id="study-btn" class="big-button study-start" type="button">Учить</button>
 
     <div id="card-list"></div>
     <p id="cards-empty" class="empty-text" hidden>В этой колоде пока нет карточек</p>
@@ -40,6 +41,31 @@
       <button id="export-deck-btn" class="big-button file-btn" type="button">Экспорт колоды</button>
       <p id="export-deck-hint" class="form-hint" role="status"></p>
     </section>
+  </main>
+
+  <!-- Экран «Учёба»: карточка переворачивается, внизу «Знаю» / «Не знаю» -->
+  <main id="study-screen" class="app screen" hidden>
+    <button id="study-exit-btn" class="big-button secondary back-btn" type="button">← Закончить</button>
+    <p id="study-stats" class="study-stats" role="status"></p>
+
+    <button id="flip-card" class="flip-card" type="button" aria-label="Перевернуть карточку">
+      <span class="flip-inner">
+        <span class="flip-face flip-front">
+          <span class="card-label">// вопрос</span>
+          <span id="study-question" class="flip-text"></span>
+        </span>
+        <span class="flip-face flip-back">
+          <span class="card-label">// ответ</span>
+          <span id="study-answer" class="flip-text"></span>
+        </span>
+      </span>
+    </button>
+
+    <p id="study-tip" class="study-tip">Нажмите на карточку, чтобы увидеть ответ</p>
+    <div id="study-answers" class="study-answers" hidden>
+      <button id="dontknow-btn" class="big-button dontknow" type="button">Не знаю</button>
+      <button id="know-btn" class="big-button know" type="button">Знаю</button>
+    </div>
   </main>
 
   <main id="decks-screen" class="app screen">

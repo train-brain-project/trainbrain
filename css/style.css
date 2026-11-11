@@ -342,6 +342,124 @@ input::placeholder {
   margin-bottom: 10px;
 }
 
+/* ---------- Учёба ---------- */
+.study-start {
+  margin-bottom: 16px;
+}
+
+.study-stats {
+  margin: 4px 0 12px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* Карточка: две стороны в одной ячейке, поэтому высота по самой длинной */
+.flip-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  perspective: 1200px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.5s ease;
+}
+
+.flip-card.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 280px;
+  padding: 20px;
+  background-color: var(--surface);
+  /* тот же тусклый узор из кода, чуть заметнее */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%23adbac7' fill-opacity='0.08' font-family='monospace' font-size='20'%3E%3Ctext x='14' y='40'%3E%7B %7D%3C/text%3E%3Ctext x='96' y='96'%3E%26lt;/%26gt;%3C/text%3E%3Ctext x='30' y='140'%3E;%3C/text%3E%3C/g%3E%3C/svg%3E");
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 16px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-back {
+  transform: rotateY(180deg);
+  border-left-color: #57ab5a;
+}
+
+.flip-text {
+  display: block;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.flip-front .flip-text {
+  font-size: 24px;
+  color: var(--text);
+}
+
+.flip-back .flip-text {
+  font-size: 20px;
+  color: var(--text);
+}
+
+.study-tip {
+  margin: 14px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.study-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+  animation: fade-in 0.2s ease-out;
+}
+
+.big-button.know {
+  color: #14210f;
+  background: #57ab5a;
+}
+
+.big-button.know:active {
+  background: #6bc46d;
+}
+
+.big-button.dontknow {
+  color: var(--button-text);
+  background: var(--danger);
+}
+
+.big-button.dontknow:active {
+  background: var(--danger-press);
+}
+
+/* Если в системе включено «уменьшить движение», переворот без анимации */
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner {
+    transition: none;
+  }
+}
+
 /* Блок «Файлы» (импорт и экспорт): отдельно от остальных кнопок, цвет янтаря */
 .file-actions {
   margin-top: 32px;

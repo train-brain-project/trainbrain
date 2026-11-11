@@ -253,6 +253,53 @@ function buildAllExport() {
   };
 }
 
+// ---------- Учёба ----------
+
+// Вес карточки: чем лучше знаешь (score 0..4), тем реже показываем. Не меньше 1.
+function cardWeight(card) {
+  var score = typeof card.score === 'number' && card.score >= 0 ? Math.min(4, card.score) : 0;
+  return 5 - score;
+}
+
+// Выбираем следующую карточку. Две подряд одинаковые не показываем
+// (если в колоде есть другие). rng можно подменить для проверки.
+function pickNextCard(cards, lastId, rng) {
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return null;
+  }
+  var pool = cards.filter(function (c) { return c.id !== lastId; });
+  if (pool.length === 0) {
+    pool = cards;
+  }
+  var random = typeof rng === 'function' ? rng : Math.random;
+  var total = pool.reduce(function (sum, c) { return sum + cardWeight(c); }, 0);
+  var point = random() * total;
+  for (var i = 0; i < pool.length; i++) {
+    point -= cardWeight(pool[i]);
+    if (point < 0) {
+      return pool[i];
+    }
+  }
+  return pool[pool.length - 1];
+}
+
+// Запоминаем ответ: «знаю» повышает счёт на 1 (до 4), «не знаю» сбрасывает в 0.
+// Возвращает обновлённую карточку или null.
+function recordAnswer(deckId, cardId, known) {
+  var data = loadData();
+  var found = findCard(data, deckId, cardId);
+  if (!found) {
+    return null;
+  }
+  var score = typeof found.card.score === 'number' && found.card.score >= 0 ? found.card.score : 0;
+  found.card.score = known ? Math.min(4, score + 1) : 0;
+  found.card.lastSeenAt = Date.now();
+  if (!saveData(data)) {
+    return null;
+  }
+  return found.card;
+}
+
 // ---------- Импорт ----------
 
 // Превращаем карточку из файла в нормальную. Плохая карточка даёт null.
@@ -381,6 +428,9 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    pickNextCard: pickNextCard,
+    recordAnswer: recordAnswer,
+    cardWeight: cardWeight,
     importFromText: importFromText,
     buildDeckExport: buildDeckExport,
     buildAllExport: buildAllExport,
