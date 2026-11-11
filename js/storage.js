@@ -379,6 +379,33 @@ function pickNextCard(cards, lastId, rng) {
   return pool[pool.length - 1];
 }
 
+// Выучена ли вся колода (в пустой колоде учить нечего, считаем «нет»)
+function allLearned(cards) {
+  return Array.isArray(cards) && cards.length > 0 && countLearned(cards) === cards.length;
+}
+
+// Выбираем карточку для сессии «до выученного»: показываем только невыученные.
+// Когда невыученная осталась одна, чередуем её с другими карточками,
+// чтобы не задавать один и тот же вопрос подряд. Все выучены: null.
+function pickStudyCard(cards, lastId, rng) {
+  if (!Array.isArray(cards) || cards.length === 0) {
+    return null;
+  }
+  var unlearned = cards.filter(function (c) {
+    return !(typeof c.score === 'number' && c.score >= LEARNED_SCORE);
+  });
+  if (unlearned.length === 0) {
+    return null;
+  }
+  if (unlearned.length === 1) {
+    if (unlearned[0].id !== lastId || cards.length === 1) {
+      return unlearned[0];
+    }
+    return pickNextCard(cards, lastId, rng); // другая карточка, пока невыученную «не видно»
+  }
+  return pickNextCard(unlearned, lastId, rng);
+}
+
 // Запоминаем ответ: «знаю» повышает счёт на 1 (до 4), «не знаю» сбрасывает в 0.
 // Возвращает обновлённую карточку или null.
 function recordAnswer(deckId, cardId, known) {
@@ -543,6 +570,8 @@ function importFromText(text) {
 // Для проверки в Node (в браузере этот блок ничего не делает)
 if (typeof module !== 'undefined') {
   module.exports = {
+    allLearned: allLearned,
+    pickStudyCard: pickStudyCard,
     countLearned: countLearned,
     resetDeckProgress: resetDeckProgress,
     buildCardFields: buildCardFields,

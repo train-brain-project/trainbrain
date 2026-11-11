@@ -697,8 +697,45 @@ var studyUnknown = 0;
 var studyBusy = false;    // пока карточка возвращается, нажатия игнорируем
 var studyTimer = null;
 
+var studyProgressText = document.getElementById('study-progress-text');
+var studyProgressFill = document.getElementById('study-progress-fill');
+var studyDone = document.getElementById('study-done');
+var studyDoneTitle = document.getElementById('study-done-title');
+var studyDoneText = document.getElementById('study-done-text');
+var studyAgainBtn = document.getElementById('study-again-btn');
+var studyDoneBtn = document.getElementById('study-done-btn');
+
+// Счётчики ответов и полоска «Выучено X из N»
 function renderStudyStats() {
   studyStats.textContent = 'Знаю: ' + studyKnown + ' · Не знаю: ' + studyUnknown;
+  var deck = getDeck(openDeckId);
+  var total = deck && Array.isArray(deck.cards) ? deck.cards.length : 0;
+  var learned = deck ? countLearned(deck.cards) : 0;
+  studyProgressText.textContent = 'Выучено ' + learned + ' из ' + total;
+  studyProgressFill.style.width = (total > 0 ? Math.round(learned / total * 100) : 0) + '%';
+}
+
+// Итог: все карточки выучены (initial = колода была выучена ещё до начала)
+function showStudyDone(initial) {
+  clearTimeout(studyTimer);
+  studyBusy = false;
+  studyCard = null;
+  flipCard.hidden = true;
+  flipCard.classList.remove('flipped');
+  quizBox.hidden = true;
+  studyAnswers.hidden = true;
+  studyTip.textContent = '';
+  renderStudyStats();
+  if (initial) {
+    studyDoneTitle.textContent = 'Вся колода уже выучена';
+    studyDoneText.textContent = 'Можно начать заново: прогресс сбросится, а карточки останутся.';
+  } else {
+    studyDoneTitle.textContent = 'Колода выучена!';
+    studyDoneText.textContent = 'Ответов: ' + (studyKnown + studyUnknown) +
+      '. Верно: ' + studyKnown + ', ошибок: ' + studyUnknown + '.';
+  }
+  studyDone.hidden = false;
+  window.scrollTo(0, 0);
 }
 
 var quizBox = document.getElementById('quiz-box');
@@ -832,9 +869,13 @@ function showStudyCard(card, animate) {
 // Берём следующую карточку по весам и показываем
 function nextStudyCard(animate) {
   var deck = getDeck(openDeckId);
-  var card = deck ? pickNextCard(deck.cards, studyLastId) : null;
-  if (!card) {
+  if (!deck || !Array.isArray(deck.cards) || deck.cards.length === 0) {
     stopStudy();
+    return;
+  }
+  var card = pickStudyCard(deck.cards, studyLastId);
+  if (!card) {
+    showStudyDone(false); // невыученных не осталось
     return;
   }
   studyLastId = card.id;
@@ -849,11 +890,16 @@ function startStudy() {
   studyKnown = 0;
   studyUnknown = 0;
   studyLastId = null;
-  renderStudyStats();
+  studyDone.hidden = true;
   flipCard.classList.remove('flipped');
   deckScreen.hidden = true;
   studyScreen.hidden = false;
   window.scrollTo(0, 0);
+  if (allLearned(deck.cards)) {
+    showStudyDone(true);
+    return;
+  }
+  renderStudyStats();
   nextStudyCard(false);
 }
 
@@ -861,6 +907,7 @@ function stopStudy() {
   clearTimeout(studyTimer);
   studyBusy = false;
   studyCard = null;
+  studyDone.hidden = true;
   studyScreen.hidden = true;
   deckScreen.hidden = false;
   renderDeckScreen();
@@ -900,6 +947,14 @@ quizNextBtn.addEventListener('click', function () {
 });
 knowBtn.addEventListener('click', function () { answerStudy(true); });
 dontKnowBtn.addEventListener('click', function () { answerStudy(false); });
+studyAgainBtn.addEventListener('click', function () {
+  if (resetDeckProgress(openDeckId)) {
+    startStudy();
+  } else {
+    studyDoneText.textContent = 'Не удалось сбросить прогресс';
+  }
+});
+studyDoneBtn.addEventListener('click', stopStudy);
 studyBtn.addEventListener('click', startStudy);
 studyExitBtn.addEventListener('click', stopStudy);
 

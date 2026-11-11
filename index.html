@@ -57,6 +57,18 @@
   <main id="study-screen" class="app screen" hidden>
     <button id="study-exit-btn" class="big-button secondary back-btn" type="button">← Закончить</button>
     <p id="study-stats" class="study-stats" role="status"></p>
+    <div class="study-progress">
+      <p id="study-progress-text" class="study-progress-text"></p>
+      <div class="progress-bar"><div id="study-progress-fill" class="progress-fill"></div></div>
+    </div>
+
+    <!-- Итог: все карточки выучены -->
+    <div id="study-done" class="study-done" hidden>
+      <h2 id="study-done-title" class="study-done-title"></h2>
+      <p id="study-done-text" class="study-done-text"></p>
+      <button id="study-again-btn" class="big-button" type="button">Сбросить прогресс и учить заново</button>
+      <button id="study-done-btn" class="big-button secondary" type="button">К колоде</button>
+    </div>
 
     <button id="flip-card" class="flip-card" type="button" aria-label="Перевернуть карточку">
       <span class="flip-inner">

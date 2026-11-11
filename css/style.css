@@ -355,6 +355,54 @@ input::placeholder {
   color: var(--muted);
 }
 
+/* Полоска «Выучено X из N» */
+.study-progress {
+  margin: 0 0 14px;
+}
+
+.study-progress-text {
+  margin: 0 0 6px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.progress-bar {
+  height: 8px;
+  overflow: hidden;
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.progress-fill {
+  width: 0;
+  height: 100%;
+  background: #57ab5a;
+  transition: width 0.4s ease;
+}
+
+/* Итог учёбы */
+.study-done {
+  padding: 8px 0;
+  text-align: center;
+  animation: fade-in 0.25s ease-out;
+}
+
+.study-done-title {
+  margin: 16px 0 8px;
+  color: #7fd082;
+}
+
+.study-done-text {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+.study-done .big-button {
+  margin-bottom: 10px;
+}
+
 /* Карточка: две стороны в одной ячейке, поэтому высота по самой длинной */
 .flip-card {
   display: block;
