@@ -343,3 +343,22 @@ cardDoneBtn.addEventListener('click', closeCardForm);
 
 // При запуске всегда показываем список колод
 renderDecks();
+
+// ---------- Версия на экране ----------
+// На тестовых страницах version.js может не быть, поэтому проверяем
+var appVersionEl = document.getElementById('app-version');
+if (appVersionEl && typeof APP_VERSION !== 'undefined') {
+  appVersionEl.textContent = 'версия ' + APP_VERSION;
+}
+
+// ---------- Офлайн-режим ----------
+// Если браузер умеет service worker, регистрируем его
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    // updateViaCache: 'none' = при проверке обновлений не брать старое из кэша браузера
+    // (иначе новая версия version.js могла бы доходить с задержкой до 10 минут)
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function (error) {
+      console.log('Service worker не запустился:', error);
+    });
+  });
+}

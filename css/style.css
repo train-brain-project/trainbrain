@@ -333,6 +333,16 @@ input::placeholder {
   color: #57ab5a;
 }
 
+/* Подпись с версией внизу экрана «Колоды» */
+.app-version {
+  margin: 24px 0 0;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* Если в телефоне включено «уменьшить движение» — всё без анимаций */
 @media (prefers-reduced-motion: reduce) {
   *,

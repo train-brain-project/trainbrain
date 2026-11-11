@@ -52,9 +52,12 @@
       <button id="create-btn" class="big-button" type="button">Создать</button>
       <button id="cancel-btn" class="big-button secondary" type="button">Отмена</button>
     </div>
+
+    <p id="app-version" class="app-version"></p>
   </main>
 
-  <!-- Обычные скрипты (не module). storage.js должен идти перед app.js -->
+  <!-- Обычные скрипты (не module). version.js и storage.js идут перед app.js -->
+  <script src="js/version.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
 </body>
